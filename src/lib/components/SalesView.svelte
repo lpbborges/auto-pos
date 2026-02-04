@@ -85,7 +85,7 @@
         <div class="mb-4 rounded-full bg-muted p-4">
           <ShoppingCart class="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 class="mb-1 text-lg font-semibold">No products found</h3>
+        <h3 class="mb-1 text-lg font-semibold">Nenhum produto encontrado</h3>
         <p class="text-sm text-muted-foreground">
           {$searchQuery ? "Tente uma pesquisa diferente" : "Adicione produtos no estoque"}
         </p>
