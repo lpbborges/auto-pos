@@ -1,6 +1,8 @@
 <script lang="ts">
   import { cn } from "$lib/utils";
   import { X } from "lucide-svelte";
+  import { fade, fly } from "svelte/transition";
+  import { expoOut } from "svelte/easing";
   import type { Snippet } from "svelte";
 
   interface Props {
@@ -12,6 +14,13 @@
   }
 
   let { open = $bindable(false), onclose, side = "right", class: className, children }: Props = $props();
+
+  const flyParams = {
+    right: { x: 500, duration: 500, easing: expoOut },
+    left: { x: -500, duration: 500, easing: expoOut },
+    top: { y: -500, duration: 500, easing: expoOut },
+    bottom: { y: 500, duration: 500, easing: expoOut },
+  };
 
   const sideClasses = {
     top: "inset-x-0 top-0 border-b",
@@ -39,6 +48,7 @@
   <div class="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
     <!-- Backdrop -->
     <button
+      transition:fade={{ duration: 200 }}
       type="button"
       class="fixed inset-0 bg-black/80"
       onclick={handleBackdropClick}
@@ -47,6 +57,7 @@
 
     <!-- Content -->
     <div
+      transition:fly={flyParams[side]}
       class={cn(
         "fixed z-[100] gap-4 bg-background p-6 shadow-lg transition ease-in-out",
         sideClasses[side],
