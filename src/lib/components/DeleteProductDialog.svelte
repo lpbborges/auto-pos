@@ -25,7 +25,7 @@
   <DialogHeader>
     <DialogTitle>Excluir Produto</DialogTitle>
     <DialogDescription>
-      Tem certeza que seja excluir <strong>{productName}</strong>? Essa ação não pode ser desfeita.
+      Tem certeza que deseja excluir <strong>{productName}</strong>? Essa ação não pode ser desfeita.
     </DialogDescription>
   </DialogHeader>
 

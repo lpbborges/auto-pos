@@ -10,29 +10,41 @@
   import { toast } from "svelte-sonner";
 
   let isAddDialogOpen = $state(false);
+  let isUpdateDialogOpen = $state(false);
   let editingProduct = $state<Product | null>(null);
+  let isDeleteDialogOpen = $state(false);
   let deletingProduct = $state<Product | null>(null);
 
   function handleAddProduct(data: { name: string; price: number; stock: number }) {
     products.add(data);
-    toast.success("Product added", {
-      description: `${data.name} has been added to inventory.`,
+    toast.success("Produto adicionado", {
+      description: `${data.name} adicionado ao estoque.`,
     });
+  }
+
+  function triggerUpdate(product: Product) {
+    editingProduct = product;
+    isUpdateDialogOpen = true;
   }
 
   function handleUpdateProduct(data: { name: string; price: number; stock: number }) {
     if (editingProduct) {
       products.update(editingProduct.id, data);
-      toast.success("Product updated");
+      toast.success("Produto atualizado");
       editingProduct = null;
     }
+  }
+
+  function triggerDelete(product: Product) {
+      deletingProduct = product;
+      isDeleteDialogOpen = true;
   }
 
   function handleDeleteProduct() {
     if (deletingProduct) {
       products.delete(deletingProduct.id);
       toast.success("Produto excluído");
-      deletingProduct = null;
+      isDeleteDialogOpen = false;
     }
   }
 </script>
@@ -104,20 +116,20 @@
                   <Button
                     variant="ghost"
                     size="icon"
-                    onclick={() => (editingProduct = product)}
+                    onclick={() => triggerUpdate(product)}
                     class="h-9 w-9"
                   >
                     <Pencil class="h-4 w-4" />
-                    <span class="sr-only">Edit</span>
+                    <span class="sr-only">Editar</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onclick={() => (deletingProduct = product)}
+                    onclick={() => triggerDelete(product)}
                     class="h-9 w-9 text-destructive hover:text-destructive"
                   >
                     <Trash2 class="h-4 w-4" />
-                    <span class="sr-only">Delete</span>
+                    <span class="sr-only">Deletar</span>
                   </Button>
                 </div>
               </TableCell>
@@ -146,7 +158,7 @@
 
   <!-- Edit Product Dialog -->
   <ProductFormDialog
-    open={!!editingProduct}
+    open={isUpdateDialogOpen}
     product={editingProduct}
     onsubmit={handleUpdateProduct}
     onclose={() => (editingProduct = null)}
@@ -154,7 +166,7 @@
 
   <!-- Delete Confirmation Dialog -->
   <DeleteProductDialog
-    open={!!deletingProduct}
+    open={isDeleteDialogOpen}
     productName={deletingProduct?.name || ""}
     onconfirm={handleDeleteProduct}
     onclose={() => (deletingProduct = null)}
