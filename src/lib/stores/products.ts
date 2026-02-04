@@ -6,7 +6,9 @@ const STORAGE_KEY = "pos_products";
 
 function getStoredProducts(): Product[] {
   if (!browser) return [];
+
   const stored = localStorage.getItem(STORAGE_KEY);
+
   if (stored) {
     try {
       return JSON.parse(stored);
@@ -14,56 +16,8 @@ function getStoredProducts(): Product[] {
       return [];
     }
   }
-  return [
-    {
-      id: "1",
-      name: "Coffee",
-      price: 4.5,
-      stock: 50,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      name: "Tea",
-      price: 3.0,
-      stock: 40,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      name: "Croissant",
-      price: 3.5,
-      stock: 25,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "4",
-      name: "Sandwich",
-      price: 8.0,
-      stock: 15,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "5",
-      name: "Muffin",
-      price: 2.5,
-      stock: 30,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "6",
-      name: "Juice",
-      price: 4.0,
-      stock: 35,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+
+  return [];
 }
 
 function createProductsStore() {
