@@ -25,3 +25,5 @@ dist-ssr
 *.sw?
 
 .ignore
+.aider*
+.cursorrules
