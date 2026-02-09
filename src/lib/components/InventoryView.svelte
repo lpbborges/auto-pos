@@ -5,9 +5,8 @@
   import ProductFormDialog from "./ProductFormDialog.svelte";
   import DeleteProductDialog from "./DeleteProductDialog.svelte";
   import { formatCurrency } from "$lib/utils";
-  import { filteredProducts, products, searchQuery } from "$lib/stores";
+  import { filteredProducts, searchQuery } from "$lib/stores";
   import type { Product } from "$lib/types";
-  import { toast } from "svelte-sonner";
 
   let isAddDialogOpen = $state(false);
   let isUpdateDialogOpen = $state(false);
@@ -15,37 +14,14 @@
   let isDeleteDialogOpen = $state(false);
   let deletingProduct = $state<Product | null>(null);
 
-  function handleAddProduct(data: { name: string; price: number; stock: number }) {
-    products.add(data);
-    toast.success("Produto adicionado", {
-      description: `${data.name} adicionado ao estoque.`,
-    });
-  }
-
   function triggerUpdate(product: Product) {
     editingProduct = product;
     isUpdateDialogOpen = true;
   }
 
-  function handleUpdateProduct(data: { name: string; price: number; stock: number }) {
-    if (editingProduct) {
-      products.update(editingProduct.id, data);
-      toast.success("Produto atualizado");
-      editingProduct = null;
-    }
-  }
-
   function triggerDelete(product: Product) {
-      deletingProduct = product;
-      isDeleteDialogOpen = true;
-  }
-
-  function handleDeleteProduct() {
-    if (deletingProduct) {
-      products.delete(deletingProduct.id);
-      toast.success("Produto excluído");
-      isDeleteDialogOpen = false;
-    }
+    deletingProduct = product;
+    isDeleteDialogOpen = true;
   }
 </script>
 
@@ -152,7 +128,6 @@
   <!-- Add Product Dialog -->
   <ProductFormDialog
     bind:open={isAddDialogOpen}
-    onsubmit={handleAddProduct}
     onclose={() => (isAddDialogOpen = false)}
   />
 
@@ -160,15 +135,13 @@
   <ProductFormDialog
     open={isUpdateDialogOpen}
     product={editingProduct}
-    onsubmit={handleUpdateProduct}
-    onclose={() => (editingProduct = null)}
+    onclose={() => { editingProduct = null; isUpdateDialogOpen = false; }}
   />
 
   <!-- Delete Confirmation Dialog -->
   <DeleteProductDialog
-    open={isDeleteDialogOpen}
-    productName={deletingProduct?.name || ""}
-    onconfirm={handleDeleteProduct}
-    onclose={() => (deletingProduct = null)}
+    bind:open={isDeleteDialogOpen}
+    product={deletingProduct}
+    onclose={() => { deletingProduct = null; isDeleteDialogOpen = false; }}
   />
 </div>

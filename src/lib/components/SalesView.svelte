@@ -5,9 +5,8 @@
   import CartSheet from "./CartSheet.svelte";
   import CheckoutDialog from "./CheckoutDialog.svelte";
   import { cn, formatCurrency } from "$lib/utils";
-  import { availableProducts, searchQuery, products, cart, cartTotal, cartItemCount } from "$lib/stores";
+  import { availableProducts, searchQuery, cart, cartTotal, cartItemCount } from "$lib/stores";
   import type { Product } from "$lib/types";
-  import { toast } from "svelte-sonner";
 
   let isCartOpen = $state(false);
   let isCheckoutOpen = $state(false);
@@ -15,22 +14,6 @@
   function handleCheckout() {
     isCartOpen = false;
     isCheckoutOpen = true;
-  }
-
-  function confirmCheckout() {
-    const items = $cart;
-    const total = $cartTotal;
-
-    items.forEach((item) => {
-      products.decrementStock(item.product.id, item.quantity);
-    });
-
-    cart.clear();
-    isCheckoutOpen = false;
-
-    toast.success("Venda concluída com sucesso!", {
-      description: `Total: ${formatCurrency(total)}`,
-    });
   }
 
   function getCartQuantity(productId: string): number {
@@ -186,7 +169,7 @@
     bind:open={isCheckoutOpen}
     total={$cartTotal}
     itemCount={$cartItemCount}
-    onconfirm={confirmCheckout}
+    items={$cart}
     onclose={() => (isCheckoutOpen = false)}
   />
 </div>

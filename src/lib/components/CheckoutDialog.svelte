@@ -2,21 +2,21 @@
   import { CheckCircle2 } from "lucide-svelte";
   import { Dialog, DialogHeader, DialogTitle, Button } from "$lib/components/ui";
   import { formatCurrency } from "$lib/utils";
+  import { enhance } from "$app/forms";
+  import { products, cart } from "$lib/stores";
+  import { toast } from "svelte-sonner";
+  import type { CartItem } from "$lib/types";
 
   interface Props {
     open: boolean;
     total: number;
     itemCount: number;
-    onconfirm: () => void;
+    items: CartItem[];
     onclose: () => void;
   }
 
-  let { open = $bindable(false), total, itemCount, onconfirm, onclose }: Props = $props();
-
-  function handleConfirm() {
-    onconfirm();
-    open = false;
-  }
+  let { open = $bindable(false), total, itemCount, items, onclose }: Props = $props();
+  let isSubmitting = $state(false);
 
   function handleClose() {
     open = false;
@@ -36,15 +36,61 @@
     </div>
   </DialogHeader>
 
-  <div class="flex gap-3 pt-4">
-    <Button variant="outline" onclick={handleClose} class="touch-target flex-1">
+  <form
+    method="POST"
+    action="?/processSale"
+    use:enhance={() => {
+      isSubmitting = true;
+
+      return async ({ result, update }) => {
+          console.log({ result, total })
+        isSubmitting = false;
+
+        if (result.type === "success") {
+          const data = result.data as { success: boolean; error?: string, sale?: { total: number } };
+          if (data?.success) {
+            // Update local stock
+            items.forEach((item) => {
+              products.decrementStock(item.product.id, item.quantity);
+            });
+            cart.clear();
+            toast.success("Venda concluída com sucesso!", {
+              description: `Total: ${formatCurrency(data.sale?.total ?? 0)}`,
+            });
+            open = false;
+          } else if (data?.error) {
+            toast.error("Erro", {
+              description: data.error,
+            });
+          }
+        } else if (result.type === "failure") {
+          const data = result.data as { error?: string };
+          toast.error("Erro", {
+            description: data?.error || "Ocorreu um erro ao processar a venda",
+          });
+        }
+
+        await update();
+      };
+    }}
+    class="flex gap-3 pt-4"
+  >
+    <input type="hidden" name="items" value={JSON.stringify(items)} />
+    <input type="hidden" name="total" value={total} />
+
+    <Button type="button" variant="outline" onclick={handleClose} class="touch-target flex-1" disabled={isSubmitting}>
       Cancelar
     </Button>
     <Button
-      onclick={handleConfirm}
+      type="submit"
       class="touch-target flex-1 bg-success hover:bg-success/90"
+      disabled={isSubmitting}
     >
-      Completar Venda
+      {#if isSubmitting}
+        Processando...
+      {:else}
+        Completar Venda
+      {/if}
     </Button>
-  </div>
+  </form>
 </Dialog>

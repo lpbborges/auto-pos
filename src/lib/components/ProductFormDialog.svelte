@@ -1,20 +1,23 @@
 <script lang="ts">
   import { Dialog, DialogHeader, DialogTitle, Button, Input } from "$lib/components/ui";
   import type { Product } from "$lib/types";
+  import { enhance } from "$app/forms";
+  import { products } from "$lib/stores";
+  import { toast } from "svelte-sonner";
 
   interface Props {
     open: boolean;
     product?: Product | null;
-    onsubmit: (data: { name: string; price: number; stock: number }) => void;
     onclose: () => void;
   }
 
-  let { open = $bindable(false), product = null, onsubmit, onclose }: Props = $props();
+  let { open = $bindable(false), product = null, onclose }: Props = $props();
 
   let name = $state("");
   let price = $state(0);
   let stock = $state(0);
   let errors = $state<{ name?: string; price?: string; stock?: string }>({});
+  let isSubmitting = $state(false);
 
   $effect(() => {
     if (open) {
@@ -28,23 +31,15 @@
   function validate(): boolean {
     errors = {};
     if (!name.trim()) {
-      errors.name = "Name is required";
+      errors.name = "Nome é obrigatório";
     }
     if (price <= 0) {
-      errors.price = "Price must be greater than 0";
+      errors.price = "Preço deve ser maior que 0";
     }
     if (stock < 0) {
-      errors.stock = "Stock cannot be negative";
+      errors.stock = "Estoque não pode ser negativo";
     }
     return Object.keys(errors).length === 0;
-  }
-
-  function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    if (validate()) {
-      onsubmit({ name: name.trim(), price, stock });
-      open = false;
-    }
   }
 
   function handleClose() {
@@ -58,11 +53,54 @@
     <DialogTitle>{product ? "Editar Produto" : "Adicionar Produto"}</DialogTitle>
   </DialogHeader>
 
-  <form onsubmit={handleSubmit} class="space-y-4 mt-4">
+  <form
+    method="POST"
+    action={product ? "?/updateProduct" : "?/createProduct"}
+    use:enhance={() => {
+      isSubmitting = true;
+      
+      return async ({ result, update }) => {
+        isSubmitting = false;
+        
+        if (result.type === "success") {
+          const data = result.data as { success: boolean; product?: Product; error?: string };
+          if (data?.success && data.product) {
+            if (product) {
+              products.updateProduct(data.product);
+              toast.success("Produto atualizado");
+            } else {
+              products.add(data.product);
+              toast.success("Produto adicionado", {
+                description: `${data.product.name} adicionado ao estoque.`,
+              });
+            }
+            open = false;
+          } else if (data?.error) {
+            toast.error("Erro", {
+              description: data.error,
+            });
+          }
+        } else if (result.type === "failure") {
+          const data = result.data as { error?: string };
+          toast.error("Erro", {
+            description: data?.error || "Ocorreu um erro",
+          });
+        }
+        
+        await update();
+      };
+    }}
+    class="space-y-4 mt-4"
+  >
+    {#if product}
+      <input type="hidden" name="id" value={product.id} />
+    {/if}
+    
     <div class="space-y-2">
-      <label for="name" class="text-sm font-medium">Product Name</label>
+      <label for="name" class="text-sm font-medium">Nome do Produto</label>
       <Input
         id="name"
+        name="name"
         placeholder="Nome do Produto"
         class="touch-target"
         bind:value={name}
@@ -76,6 +114,7 @@
       <label for="price" class="text-sm font-medium">Preço (R$)</label>
       <Input
         id="price"
+        name="price"
         type="number"
         step="0.01"
         min="0"
@@ -92,6 +131,7 @@
       <label for="stock" class="text-sm font-medium">Quantidade</label>
       <Input
         id="stock"
+        name="stock"
         type="number"
         min="0"
         placeholder="0"
@@ -109,11 +149,16 @@
         variant="outline"
         onclick={handleClose}
         class="touch-target flex-1"
+        disabled={isSubmitting}
       >
         Cancelar
       </Button>
-      <Button type="submit" class="touch-target flex-1">
-        {product ? "Salvar Alterações" : "Adicionar Produto"}
+      <Button type="submit" class="touch-target flex-1" disabled={isSubmitting}>
+        {#if isSubmitting}
+          Salvando...
+        {:else}
+          {product ? "Salvar Alterações" : "Adicionar Produto"}
+        {/if}
       </Button>
     </div>
   </form>
