@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Plus, Pencil, Trash2, Package } from "lucide-svelte";
+  import { Search, Plus, Pencil, Trash2, Package, Receipt } from "lucide-svelte";
   import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui";
   import PageHeader from "./PageHeader.svelte";
   import ProductFormDialog from "./ProductFormDialog.svelte";
@@ -27,10 +27,19 @@
 
 <div class="flex min-h-screen flex-col pb-20">
   <PageHeader title="Produtos">
-    <Button size="sm" onclick={() => (isAddDialogOpen = true)} class="touch-target gap-2 hidden md:flex">
-      <Plus class="h-4 w-4" />
-      Adicionar
-    </Button>
+    <div class="flex items-center gap-2">
+      <a
+        href="/sales"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        title="Histórico de vendas"
+      >
+        <Receipt class="h-5 w-5" />
+      </a>
+      <Button size="sm" onclick={() => (isAddDialogOpen = true)} class="touch-target gap-2 hidden md:flex">
+        <Plus class="h-4 w-4" />
+        Adicionar
+      </Button>
+    </div>
   </PageHeader>
 
   <!-- Search Bar -->

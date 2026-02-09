@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, ShoppingCart } from "lucide-svelte";
+  import { Search, ShoppingCart, Receipt } from "lucide-svelte";
   import { Input, Button, Card, CardContent, Badge } from "$lib/components/ui";
   import PageHeader from "./PageHeader.svelte";
   import CartSheet from "./CartSheet.svelte";
@@ -31,20 +31,29 @@
 
 <div class="flex min-h-screen flex-col pb-36">
   <PageHeader title="Vendas">
-    <Button
-      variant="outline"
-      size="sm"
-      onclick={() => (isCartOpen = true)}
-      class="touch-target relative gap-2"
-    >
-      <ShoppingCart class="h-4 w-4" />
-      <span class="hidden sm:inline">Carrinho</span>
-      {#if $cartItemCount > 0}
-        <Badge class="absolute -right-2 -top-2 h-5 min-w-[20px] rounded-full px-1.5 text-xs">
-          {$cartItemCount}
-        </Badge>
-      {/if}
-    </Button>
+    <div class="flex items-center gap-2">
+      <a
+        href="/sales"
+        class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        title="Histórico de vendas"
+      >
+        <Receipt class="h-5 w-5" />
+      </a>
+      <Button
+        variant="outline"
+        size="sm"
+        onclick={() => (isCartOpen = true)}
+        class="touch-target relative gap-2"
+      >
+        <ShoppingCart class="h-4 w-4" />
+        <span class="hidden sm:inline">Carrinho</span>
+        {#if $cartItemCount > 0}
+          <Badge class="absolute -right-2 -top-2 h-5 min-w-[20px] rounded-full px-1.5 text-xs">
+            {$cartItemCount}
+          </Badge>
+        {/if}
+      </Button>
+    </div>
   </PageHeader>
 
   <!-- Search Bar -->
