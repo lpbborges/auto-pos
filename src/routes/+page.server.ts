@@ -1,8 +1,7 @@
-import { supabase } from "$lib/supabaseClient";
-import type { Actions } from "./$types";
+import type { Actions, PageServerLoad } from "./$types";
 
-export async function load() {
-  const { data: products, error } = await supabase
+export const load: PageServerLoad = async ({ locals }) => {
+  const { data: products, error } = await locals.supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
@@ -13,10 +12,10 @@ export async function load() {
   }
 
   return { products: products ?? [] };
-}
+};
 
 export const actions: Actions = {
-  createProduct: async ({ request }) => {
+  createProduct: async ({ request, locals }) => {
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const price = parseFloat(formData.get("price") as string);
@@ -26,7 +25,7 @@ export const actions: Actions = {
       return { success: false, error: "Invalid product data" };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await locals.supabase
       .from("products")
       .insert([{ name, price, stock }])
       .select()
@@ -40,7 +39,7 @@ export const actions: Actions = {
     return { success: true, product: data };
   },
 
-  updateProduct: async ({ request }) => {
+  updateProduct: async ({ request, locals }) => {
     const formData = await request.formData();
     const id = formData.get("id") as string;
     const name = formData.get("name") as string;
@@ -51,7 +50,7 @@ export const actions: Actions = {
       return { success: false, error: "Invalid product data" };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await locals.supabase
       .from("products")
       .update({ name, price, stock, updated_at: new Date().toISOString() })
       .eq("id", id)
@@ -66,7 +65,7 @@ export const actions: Actions = {
     return { success: true, product: data };
   },
 
-  deleteProduct: async ({ request }) => {
+  deleteProduct: async ({ request, locals }) => {
     const formData = await request.formData();
     const id = formData.get("id") as string;
 
@@ -74,7 +73,7 @@ export const actions: Actions = {
       return { success: false, error: "Product ID is required" };
     }
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await locals.supabase.from("products").delete().eq("id", id);
 
     if (error) {
       console.error("Error deleting product:", error);
@@ -84,7 +83,7 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  processSale: async ({ request }) => {
+  processSale: async ({ request, locals }) => {
     const formData = await request.formData();
     const itemsJson = formData.get("items") as string;
     const total = parseFloat(formData.get("total") as string);
@@ -96,7 +95,7 @@ export const actions: Actions = {
     const items = JSON.parse(itemsJson);
 
     // Create the sale first
-    const { data: sale, error: saleError } = await supabase
+    const { data: sale, error: saleError } = await locals.supabase
       .from("sales")
       .insert([{ total }])
       .select()
@@ -117,7 +116,7 @@ export const actions: Actions = {
       }),
     );
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await locals.supabase
       .from("sale_items")
       .insert(saleItems);
 
@@ -128,7 +127,7 @@ export const actions: Actions = {
 
     // Update stock for each item
     for (const item of items) {
-      const { error: stockError } = await supabase
+      const { error: stockError } = await locals.supabase
         .from("products")
         .update({
           stock: item.product.stock - item.quantity,
