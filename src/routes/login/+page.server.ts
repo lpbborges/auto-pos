@@ -8,7 +8,7 @@ export const actions: Actions = {
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      return fail(400, { error: "Email and password are required" });
+      return fail(400, { error: "Email e senha são obrigatórios" });
     }
 
     const { data, error } = await locals.supabase.auth.signInWithPassword({
