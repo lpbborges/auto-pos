@@ -4,10 +4,11 @@ import type { Actions, PageServerLoad } from "./$types";
 export const load: PageServerLoad = async ({ locals }) => {
   const user = locals.user;
 
-  // Fetch products
+  // Fetch products (excluding soft-deleted)
   const { data: products, error: productsError } = await locals.supabase
     .from("products")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (productsError) {
@@ -118,9 +119,10 @@ export const actions: Actions = {
       return { success: false, error: "Product ID is required" };
     }
 
+    // Soft delete: set deleted_at to current timestamp
     const { error } = await locals.supabase
       .from("products")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
 
     if (error) {

@@ -13,17 +13,21 @@ function createProductsStore(initialProducts: Product[] = []) {
     },
     updateProduct: (updatedProduct: Product) => {
       update((products) =>
-        products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+        products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)),
       );
     },
     delete: (id: string) => {
-      update((products) => products.filter((p) => p.id !== id));
+      update((products) =>
+        products.map((p) =>
+          p.id === id ? { ...p, deletedAt: new Date().toISOString() } : p,
+        ),
+      );
     },
     decrementStock: (id: string, quantity: number) => {
       update((products) =>
         products.map((p) =>
-          p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p
-        )
+          p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p,
+        ),
       );
     },
   };
@@ -35,11 +39,11 @@ export const searchQuery = writable("");
 export const filteredProducts = derived(
   [products, searchQuery],
   ([$products, $searchQuery]) =>
-    $products.filter((p) =>
-      p.name.toLowerCase().includes($searchQuery.toLowerCase())
-    )
+    $products
+      .filter((p) => !p.deletedAt)
+      .filter((p) => p.name.toLowerCase().includes($searchQuery.toLowerCase())),
 );
 
 export const availableProducts = derived(filteredProducts, ($filtered) =>
-  $filtered.filter((p) => p.stock > 0)
+  $filtered.filter((p) => p.stock > 0),
 );

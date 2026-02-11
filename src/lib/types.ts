@@ -19,6 +19,7 @@ export interface Product {
   storeId: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
 export interface CartItem {

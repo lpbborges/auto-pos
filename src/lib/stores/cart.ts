@@ -13,7 +13,7 @@ function createCartStore() {
           return items.map((item) =>
             item.product.id === product.id
               ? { ...item, quantity: item.quantity + 1 }
-              : item
+              : item,
           );
         }
         return [...items, { product, quantity: 1 }];
@@ -24,12 +24,14 @@ function createCartStore() {
     },
     updateQuantity: (productId: string, quantity: number) => {
       if (quantity <= 0) {
-        update((items) => items.filter((item) => item.product.id !== productId));
+        update((items) =>
+          items.filter((item) => item.product.id !== productId),
+        );
       } else {
         update((items) =>
           items.map((item) =>
-            item.product.id === productId ? { ...item, quantity } : item
-          )
+            item.product.id === productId ? { ...item, quantity } : item,
+          ),
         );
       }
     },
@@ -40,9 +42,9 @@ function createCartStore() {
 export const cart = createCartStore();
 
 export const cartTotal = derived(cart, ($cart) =>
-  $cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  $cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
 );
 
 export const cartItemCount = derived(cart, ($cart) =>
-  $cart.reduce((sum, item) => sum + item.quantity, 0)
+  $cart.reduce((sum, item) => sum + item.quantity, 0),
 );
