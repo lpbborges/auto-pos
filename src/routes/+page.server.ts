@@ -1,3 +1,4 @@
+import { redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -28,7 +29,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .select("id, name")
         .eq("id", membership.store_id)
         .single();
-      
+
       if (storeData) {
         store = { id: storeData.id, name: storeData.name };
       }
@@ -117,7 +118,10 @@ export const actions: Actions = {
       return { success: false, error: "Product ID is required" };
     }
 
-    const { error } = await locals.supabase.from("products").delete().eq("id", id);
+    const { error } = await locals.supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting product:", error);
@@ -203,5 +207,16 @@ export const actions: Actions = {
     }
 
     return { success: true, sale };
+  },
+
+  logout: async ({ locals }) => {
+    const { error } = await locals.supabase.auth.signOut();
+
+    if (error) {
+      console.error("Error signing out:", error);
+      return { success: false, error: error.message };
+    }
+
+    throw redirect(303, "/login");
   },
 };

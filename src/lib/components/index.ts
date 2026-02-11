@@ -6,3 +6,4 @@ export { default as CheckoutDialog } from "./CheckoutDialog.svelte";
 export { default as CartSheet } from "./CartSheet.svelte";
 export { default as InventoryView } from "./InventoryView.svelte";
 export { default as SalesView } from "./SalesView.svelte";
+export { default as ProfileView } from "./ProfileView.svelte";

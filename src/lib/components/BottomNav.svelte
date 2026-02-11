@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { Package, ShoppingCart, Sun, Moon } from "lucide-svelte";
+  import { Package, ShoppingCart, User } from "lucide-svelte";
   import { cn } from "$lib/utils";
-  import { toggleMode, mode } from "mode-watcher";
 
   interface Props {
-    activeTab: "inventory" | "sales";
-    ontabchange: (tab: "inventory" | "sales") => void;
+    activeTab: "inventory" | "sales" | "profile";
+    ontabchange: (tab: "inventory" | "sales" | "profile") => void;
   }
 
   let { activeTab, ontabchange }: Props = $props();
@@ -40,15 +39,16 @@
     </button>
 
     <button
-      onclick={toggleMode}
-      class="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      aria-label="Toggle theme"
+      onclick={() => ontabchange("profile")}
+      class={cn(
+        "flex min-h-[44px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors",
+        activeTab === "profile"
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
     >
-      {#if $mode === "dark"}
-        <Sun class="h-5 w-5" />
-      {:else}
-        <Moon class="h-5 w-5" />
-      {/if}
+      <User class="h-5 w-5" />
+      <span class="text-xs font-medium">Perfil</span>
     </button>
   </div>
 </nav>

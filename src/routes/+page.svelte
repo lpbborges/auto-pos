@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BottomNav, InventoryView, SalesView } from "$lib/components";
+  import { BottomNav, InventoryView, SalesView, ProfileView } from "$lib/components";
   import { products } from "$lib/stores";
   import type { PageData } from "./$types";
 
@@ -16,7 +16,7 @@
     }
   });
 
-  let activeTab = $state<"inventory" | "sales">("inventory");
+  let activeTab = $state<"inventory" | "sales" | "profile">("inventory");
 </script>
 
 <svelte:head>
@@ -27,8 +27,10 @@
 <div class="min-h-screen bg-background">
   {#if activeTab === "inventory"}
     <InventoryView />
-  {:else}
+  {:else if activeTab === "sales"}
     <SalesView />
+  {:else}
+    <ProfileView user={data.user} store={data.store} />
   {/if}
 
   <BottomNav {activeTab} ontabchange={(tab) => (activeTab = tab)} />
