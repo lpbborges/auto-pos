@@ -1,17 +1,45 @@
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
-  const { data: products, error } = await locals.supabase
+  const user = locals.user;
+
+  // Fetch products
+  const { data: products, error: productsError } = await locals.supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error loading products:", error);
-    return { products: [] };
+  if (productsError) {
+    console.error("Error loading products:", productsError);
   }
 
-  return { products: products ?? [] };
+  // Fetch user store membership
+  let store = null;
+  if (user) {
+    const { data: membership } = await locals.supabase
+      .from("store_memberships")
+      .select("store_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (membership) {
+      const { data: storeData } = await locals.supabase
+        .from("stores")
+        .select("id, name")
+        .eq("id", membership.store_id)
+        .single();
+      
+      if (storeData) {
+        store = { id: storeData.id, name: storeData.name };
+      }
+    }
+  }
+
+  return {
+    products: products ?? [],
+    user: user?.email ? { email: user.email, id: user.id } : null,
+    store,
+  };
 };
 
 export const actions: Actions = {
@@ -25,9 +53,25 @@ export const actions: Actions = {
       return { success: false, error: "Invalid product data" };
     }
 
+    // Get user's store membership
+    const user = locals.user;
+    if (!user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    const { data: membership } = await locals.supabase
+      .from("store_memberships")
+      .select("store_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return { success: false, error: "User is not a member of any store" };
+    }
+
     const { data, error } = await locals.supabase
       .from("products")
-      .insert([{ name, price, stock }])
+      .insert([{ name, price, stock, store_id: membership.store_id }])
       .select()
       .single();
 
@@ -94,10 +138,26 @@ export const actions: Actions = {
 
     const items = JSON.parse(itemsJson);
 
+    // Get user's store membership
+    const user = locals.user;
+    if (!user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    const { data: membership } = await locals.supabase
+      .from("store_memberships")
+      .select("store_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return { success: false, error: "User is not a member of any store" };
+    }
+
     // Create the sale first
     const { data: sale, error: saleError } = await locals.supabase
       .from("sales")
-      .insert([{ total }])
+      .insert([{ total, store_id: membership.store_id }])
       .select()
       .single();
 
@@ -113,6 +173,7 @@ export const actions: Actions = {
         product_id: item.product.id,
         quantity: item.quantity,
         price_at_sale: item.product.price,
+        store_id: membership.store_id,
       }),
     );
 
