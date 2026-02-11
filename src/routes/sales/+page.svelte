@@ -1,6 +1,8 @@
 <script lang="ts">
   import { formatCurrency, formatDate } from "$lib/utils";
   import { ArrowLeft, Receipt, Package } from "lucide-svelte";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
 
   interface Props {
@@ -8,6 +10,23 @@
   }
 
   let { data }: Props = $props();
+
+  const filters = [
+    { value: "all", label: "Tudo" },
+    { value: "today", label: "Hoje" },
+    { value: "week", label: "7 dias" },
+    { value: "month", label: "Mês" },
+  ] as const;
+
+  function setFilter(filterValue: string) {
+    const url = new URL($page.url);
+    if (filterValue === "all") {
+      url.searchParams.delete("filter");
+    } else {
+      url.searchParams.set("filter", filterValue);
+    }
+    goto(url.toString(), { replaceState: true });
+  }
 </script>
 
 <svelte:head>
@@ -28,6 +47,30 @@
         {data.sales.length} {data.sales.length === 1 ? 'venda' : 'vendas'}
       </div>
     </div>
+
+    <!-- Filter Chips -->
+    <div class="flex items-center gap-2 border-t border-border px-4 py-2">
+      {#each filters as filter}
+        <button
+          onclick={() => setFilter(filter.value)}
+          class="rounded-full px-3 py-1 text-xs font-medium transition-colors {data.filter === filter.value || (data.filter === 'all' && filter.value === 'all')
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+        >
+          {filter.label}
+        </button>
+      {/each}
+    </div>
+
+    <!-- Total Revenue -->
+    {#if data.totalRevenue > 0}
+      <div class="border-t border-border bg-muted/50 px-4 py-2">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">Total do período</span>
+          <span class="text-lg font-bold text-primary">{formatCurrency(data.totalRevenue)}</span>
+        </div>
+      </div>
+    {/if}
   </header>
 
   <!-- Sales List -->
