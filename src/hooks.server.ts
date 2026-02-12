@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { redirect, type Handle } from "@sveltejs/kit";
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY } from "$env/static/public";
+import {
+  PUBLIC_SUPABASE_URL,
+  PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+} from "$env/static/public";
 
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(
@@ -16,8 +19,27 @@ export const handle: Handle = async ({ event, resolve }) => {
           event.cookies.delete(key, { ...options, path: "/" });
         },
       },
-    }
+    },
   );
+
+  event.locals.safeGetSession = async () => {
+    const {
+      data: { session },
+    } = await event.locals.supabase.auth.getSession();
+
+    if (!session) {
+      return { session: null, user: null };
+    }
+
+    const {
+      data: { user },
+      error,
+    } = await event.locals.supabase.auth.getUser();
+    if (error) {
+      return { session: null, user: null };
+    }
+    return { session, user };
+  };
 
   // Get session
   const {
