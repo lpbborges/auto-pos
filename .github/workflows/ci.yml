@@ -27,6 +27,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create env file
+        run: |
+          echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co' }}" > .env.local
+          echo "PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ secrets.PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 'dummy-key' }}" >> .env.local
+          echo "PRIVATE_SUPABASE_SERVICE_ROLE_KEY=${{ secrets.PRIVATE_SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-key' }}" >> .env.local
+          echo "PRIVATE_INTERNAL_API_KEY=${{ secrets.PRIVATE_INTERNAL_API_KEY || 'dummy-api-key' }}" >> .env.local
+
       - name: Run type check
         run: pnpm run check
 
@@ -59,6 +66,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Create env file
+        run: |
+          echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co' }}" > .env.local
+          echo "PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ secrets.PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 'dummy-key' }}" >> .env.local
+          echo "PRIVATE_SUPABASE_SERVICE_ROLE_KEY=${{ secrets.PRIVATE_SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-key' }}" >> .env.local
+          echo "PRIVATE_INTERNAL_API_KEY=${{ secrets.PRIVATE_INTERNAL_API_KEY || 'dummy-api-key' }}" >> .env.local
 
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps
