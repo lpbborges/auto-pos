@@ -34,13 +34,25 @@ export function createSale(overrides: Partial<Sale> = {}): Sale {
   };
 }
 
-export function createMockSupabaseClient() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type MockSupabaseClient = any;
+
+export function createMockSupabaseClient(): MockSupabaseClient {
   const mockData: Record<string, any[]> = {
     products: [],
     sales: [],
     sale_items: [],
     stores: [],
     store_memberships: [{ store_id: "store-1", user_id: "user-1" }],
+  };
+
+  const mockSession = {
+    user: { id: "user-1", email: "test@example.com" },
+    access_token: "mock-token",
+    refresh_token: "mock-refresh",
+    expires_at: Date.now() + 3600,
+    expires_in: 3600,
+    token_type: "bearer" as const,
   };
 
   const createQueryBuilder = (table: string) => {
@@ -167,7 +179,7 @@ export function createMockSupabaseClient() {
     return builder;
   };
 
-  return {
+  const mockClient = {
     from: vi.fn((table: string) => createQueryBuilder(table)),
     auth: {
       getSession: vi.fn(() =>
@@ -187,16 +199,34 @@ export function createMockSupabaseClient() {
         }),
       ),
       signOut: vi.fn(() => Promise.resolve({ error: null })),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
     },
     _mockData: mockData,
   };
+
+  return mockClient as MockSupabaseClient;
 }
 
 export function createMockLocals() {
+  const mockSession = {
+    user: { id: "user-1", email: "test@example.com" },
+    access_token: "mock-token",
+    refresh_token: "mock-refresh",
+    expires_at: Date.now() + 3600,
+    expires_in: 3600,
+    token_type: "bearer" as const,
+  };
+
   return {
     user: { id: "user-1", email: "test@example.com" },
-    session: { user: { id: "user-1", email: "test@example.com" } },
+    session: mockSession,
     supabase: createMockSupabaseClient(),
+    safeGetSession: vi.fn(() =>
+      Promise.resolve({
+        session: mockSession,
+        user: { id: "user-1", email: "test@example.com" },
+      }),
+    ),
   };
 }
 
@@ -211,12 +241,16 @@ export function createMockFormData(data: Record<string, string>): FormData {
 export function createMockCookies() {
   const cookies: Record<string, string> = {};
   return {
-    get: vi.fn((name: string) => cookies[name] || null),
+    get: vi.fn((name: string) => cookies[name] || undefined),
+    getAll: vi.fn(() => Object.entries(cookies).map(([name, value]) => ({ name, value }))),
     set: vi.fn((name: string, value: string, options?: any) => {
       cookies[name] = value;
     }),
     delete: vi.fn((name: string, options?: any) => {
       delete cookies[name];
+    }),
+    serialize: vi.fn((name: string, value: string, options?: any) => {
+      return `${name}=${value}`;
     }),
   };
 }
