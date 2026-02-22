@@ -43,7 +43,6 @@
       isSubmitting = true;
 
       return async ({ result, update }) => {
-          console.log({ result, total })
         isSubmitting = false;
 
         if (result.type === "success") {
