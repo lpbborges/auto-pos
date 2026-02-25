@@ -65,7 +65,7 @@
         class="flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted"
       >
         <div class="flex items-center gap-3">
-          {#if $mode === 'dark'}
+          {#if mode.current === 'dark'}
             <Sun class="h-5 w-5 text-muted-foreground" />
             <span class="text-sm font-medium text-foreground">Modo Claro</span>
           {:else}
@@ -74,7 +74,7 @@
           {/if}
         </div>
         <span class="text-xs text-muted-foreground">
-          {$mode === 'dark' ? 'Escuro' : 'Claro'}
+          {mode.current === 'dark' ? 'Escuro' : 'Claro'}
         </span>
       </button>
     </div>

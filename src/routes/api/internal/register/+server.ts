@@ -6,9 +6,9 @@ import { z } from 'zod'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  storeId: z.string().uuid('Invalid store ID'),
+  storeId: z.uuid('Invalid store ID'),
 })
 
 // Admin client with service role for user creation
@@ -26,7 +26,7 @@ export async function POST({ request }: RequestEvent) {
     if (!result.success) {
       throw error(
         400,
-        `Validation failed: ${result.error.errors.map((e) => e.message).join(', ')}`,
+        `Validation failed: ${result.error.issues.map((e) => e.message).join(', ')}`,
       )
     }
 
