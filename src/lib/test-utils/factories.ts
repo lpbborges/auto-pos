@@ -1,27 +1,28 @@
-import type { Product, CartItem, Sale } from "$lib/types";
-import { vi } from "vitest";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Product, CartItem, Sale } from '$lib/types'
+import { vi } from 'vitest'
 
 export function createProduct(overrides: Partial<Product> = {}): Product {
   return {
     id: crypto.randomUUID(),
-    name: "Test Product",
+    name: 'Test Product',
     price: 100,
     stock: 10,
-    storeId: "store-1",
+    storeId: 'store-1',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deletedAt: null,
     ...overrides,
-  };
+  }
 }
 
 export function createCartItem(overrides: Partial<CartItem> = {}): CartItem {
-  const product = createProduct(overrides.product);
+  const product = createProduct(overrides.product)
   return {
     product,
     quantity: 1,
     ...overrides,
-  };
+  }
 }
 
 export function createSale(overrides: Partial<Sale> = {}): Sale {
@@ -31,11 +32,10 @@ export function createSale(overrides: Partial<Sale> = {}): Sale {
     total: 0,
     createdAt: new Date().toISOString(),
     ...overrides,
-  };
+  }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MockSupabaseClient = any;
+export type MockSupabaseClient = any
 
 export function createMockSupabaseClient(): MockSupabaseClient {
   const mockData: Record<string, any[]> = {
@@ -43,73 +43,62 @@ export function createMockSupabaseClient(): MockSupabaseClient {
     sales: [],
     sale_items: [],
     stores: [],
-    store_memberships: [{ store_id: "store-1", user_id: "user-1" }],
-  };
-
-  const mockSession = {
-    user: { id: "user-1", email: "test@example.com" },
-    access_token: "mock-token",
-    refresh_token: "mock-refresh",
-    expires_at: Date.now() + 3600,
-    expires_in: 3600,
-    token_type: "bearer" as const,
-  };
+    store_memberships: [{ store_id: 'store-1', user_id: 'user-1' }],
+  }
 
   const createQueryBuilder = (table: string) => {
-    let currentData = [...(mockData[table] || [])];
-    let filters: Array<(record: any) => boolean> = [];
-    let selectedColumns: string | null = null;
+    const currentData = [...(mockData[table] || [])]
+    const filters: Array<(record: Record<string, any>) => boolean> = []
 
     const applyFilters = () => {
       return currentData.filter((record) =>
         filters.every((filter) => filter(record)),
-      );
-    };
+      )
+    }
 
     const builder = {
       // select() returns the builder for chaining
-      select: vi.fn((columns = "*") => {
-        selectedColumns = columns;
-        return builder;
+      select: vi.fn(() => {
+        return builder
       }),
 
       // eq() adds filter and returns builder
       eq: vi.fn((column: string, value: any) => {
-        filters.push((record) => record[column] === value);
-        return builder;
+        filters.push((record) => record[column] === value)
+        return builder
       }),
 
       // is() adds null check filter
       is: vi.fn((column: string, value: any) => {
         filters.push((record) =>
           value === null ? record[column] === null : record[column] === value,
-        );
-        return builder;
+        )
+        return builder
       }),
 
       // order() returns builder
       order: vi.fn((column: string, { ascending = true } = {}) => {
         currentData.sort((a, b) => {
-          if (ascending) return a[column] > b[column] ? 1 : -1;
-          return a[column] < b[column] ? 1 : -1;
-        });
-        return builder;
+          if (ascending) return a[column] > b[column] ? 1 : -1
+          return a[column] < b[column] ? 1 : -1
+        })
+        return builder
       }),
 
       // gte() adds filter
       gte: vi.fn((column: string, value: any) => {
-        filters.push((record) => record[column] >= value);
-        return builder;
+        filters.push((record) => record[column] >= value)
+        return builder
       }),
 
       // single() executes query and returns single result
       single: vi.fn(() => {
-        const filtered = applyFilters();
-        const record = filtered[0] || null;
+        const filtered = applyFilters()
+        const record = filtered[0] || null
         return Promise.resolve({
           data: record,
-          error: record ? null : { message: "Not found" },
-        });
+          error: record ? null : { message: 'Not found' },
+        })
       }),
 
       // insert() creates new records
@@ -118,9 +107,9 @@ export function createMockSupabaseClient(): MockSupabaseClient {
           ...r,
           id: r.id || crypto.randomUUID(),
           created_at: new Date().toISOString(),
-        }));
-        mockData[table] = [...(mockData[table] || []), ...newRecords];
-        
+        }))
+        mockData[table] = [...(mockData[table] || []), ...newRecords]
+
         // Return builder that supports .select().single()
         return {
           select: vi.fn(() => ({
@@ -133,7 +122,7 @@ export function createMockSupabaseClient(): MockSupabaseClient {
           })),
           data: newRecords,
           error: null,
-        };
+        }
       }),
 
       // update() updates records
@@ -143,18 +132,18 @@ export function createMockSupabaseClient(): MockSupabaseClient {
             single: vi.fn(() => {
               const index = mockData[table]?.findIndex(
                 (r) => r[column] === value,
-              );
+              )
               if (index > -1) {
                 mockData[table][index] = {
                   ...mockData[table][index],
                   ...updates,
-                };
+                }
                 return Promise.resolve({
                   data: mockData[table][index],
                   error: null,
-                });
+                })
               }
-              return Promise.resolve({ data: null, error: null });
+              return Promise.resolve({ data: null, error: null })
             }),
           })),
         })),
@@ -164,20 +153,20 @@ export function createMockSupabaseClient(): MockSupabaseClient {
       delete: vi.fn(() => ({
         eq: vi.fn((column: string, value: any) => {
           mockData[table] =
-            mockData[table]?.filter((r) => r[column] !== value) || [];
-          return Promise.resolve({ error: null });
+            mockData[table]?.filter((r) => r[column] !== value) || []
+          return Promise.resolve({ error: null })
         }),
       })),
 
       // data and error for direct access
       get data() {
-        return applyFilters();
+        return applyFilters()
       },
       error: null,
-    };
+    }
 
-    return builder;
-  };
+    return builder
+  }
 
   const mockClient = {
     from: vi.fn((table: string) => createQueryBuilder(table)),
@@ -186,7 +175,7 @@ export function createMockSupabaseClient(): MockSupabaseClient {
         Promise.resolve({
           data: {
             session: {
-              user: { id: "user-1", email: "test@example.com" },
+              user: { id: 'user-1', email: 'test@example.com' },
             },
           },
           error: null,
@@ -194,63 +183,67 @@ export function createMockSupabaseClient(): MockSupabaseClient {
       ),
       getUser: vi.fn(() =>
         Promise.resolve({
-          data: { user: { id: "user-1", email: "test@example.com" } },
+          data: { user: { id: 'user-1', email: 'test@example.com' } },
           error: null,
         }),
       ),
       signOut: vi.fn(() => Promise.resolve({ error: null })),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
     },
     _mockData: mockData,
-  };
+  }
 
-  return mockClient as MockSupabaseClient;
+  return mockClient as MockSupabaseClient
 }
 
 export function createMockLocals() {
   const mockSession = {
-    user: { id: "user-1", email: "test@example.com" },
-    access_token: "mock-token",
-    refresh_token: "mock-refresh",
+    user: { id: 'user-1', email: 'test@example.com' },
+    access_token: 'mock-token',
+    refresh_token: 'mock-refresh',
     expires_at: Date.now() + 3600,
     expires_in: 3600,
-    token_type: "bearer" as const,
-  };
+    token_type: 'bearer' as const,
+  }
 
   return {
-    user: { id: "user-1", email: "test@example.com" },
+    user: { id: 'user-1', email: 'test@example.com' },
     session: mockSession,
     supabase: createMockSupabaseClient(),
     safeGetSession: vi.fn(() =>
       Promise.resolve({
         session: mockSession,
-        user: { id: "user-1", email: "test@example.com" },
+        user: { id: 'user-1', email: 'test@example.com' },
       }),
     ),
-  };
+  }
 }
 
 export function createMockFormData(data: Record<string, string>): FormData {
-  const formData = new FormData();
+  const formData = new FormData()
   Object.entries(data).forEach(([key, value]) => {
-    formData.append(key, value);
-  });
-  return formData;
+    formData.append(key, value)
+  })
+  return formData
 }
 
 export function createMockCookies() {
-  const cookies: Record<string, string> = {};
+  const cookies: Record<string, string> = {}
   return {
     get: vi.fn((name: string) => cookies[name] || undefined),
-    getAll: vi.fn(() => Object.entries(cookies).map(([name, value]) => ({ name, value }))),
-    set: vi.fn((name: string, value: string, options?: any) => {
-      cookies[name] = value;
+    getAll: vi.fn(() =>
+      Object.entries(cookies).map(([name, value]) => ({ name, value })),
+    ),
+    set: vi.fn((name: string, value: string) => {
+      cookies[name] = value
     }),
-    delete: vi.fn((name: string, options?: any) => {
-      delete cookies[name];
+    delete: vi.fn((name: string) => {
+      delete cookies[name]
     }),
-    serialize: vi.fn((name: string, value: string, options?: any) => {
-      return `${name}=${value}`;
+    serialize: vi.fn((name: string, value: string) => {
+      return `${name}=${value}`
     }),
-  };
+  }
 }

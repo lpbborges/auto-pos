@@ -55,10 +55,10 @@ src/
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run check` | Type check with svelte-check |
-| `npm run lint` | Lint with ESLint |
+| Command           | Description                  |
+| ----------------- | ---------------------------- |
+| `npm run dev`     | Start dev server             |
+| `npm run build`   | Build for production         |
+| `npm run preview` | Preview production build     |
+| `npm run check`   | Type check with svelte-check |
+| `npm run lint`    | Lint with ESLint             |

@@ -1,15 +1,17 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from '$app/stores'
 </script>
 
 <svelte:head>
   <title>Erro - Auto POS</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+<div
+  class="flex min-h-screen flex-col items-center justify-center px-4 text-center"
+>
   <h1 class="mb-4 text-6xl font-bold text-primary">{$page.status}</h1>
   <p class="mb-8 text-xl text-muted-foreground">
-    {$page.error?.message || "Something went wrong"}
+    {$page.error?.message || 'Something went wrong'}
   </p>
   <a
     href="/"

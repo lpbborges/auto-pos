@@ -64,6 +64,7 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 ## Test Categories
 
 ### 1. Utility Tests (`utils.test.ts`)
+
 - ✅ `cn()` - Tailwind class merging
 - ✅ `formatCurrency()` - BRL currency formatting
 - ✅ `formatDate()` - Brazilian date formatting
@@ -71,6 +72,7 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 ### 2. Store Tests
 
 **Products Store** (`products.test.ts`):
+
 - ✅ Initialization (empty array and with data)
 - ✅ Add product to store
 - ✅ Update product
@@ -81,6 +83,7 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 - ✅ Available products (stock > 0)
 
 **Cart Store** (`cart.test.ts`):
+
 - ✅ Add product to cart
 - ✅ Increment quantity for existing products
 - ✅ Remove product from cart
@@ -93,6 +96,7 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 ### 3. Server Action Tests (`page.server.test.ts`)
 
 **createProduct**:
+
 - ✅ Creates product with valid data
 - ✅ Returns error for missing fields
 - ✅ Returns error for invalid price
@@ -100,15 +104,18 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 - ✅ Includes store_id in product
 
 **updateProduct**:
+
 - ✅ Updates product with valid data
 - ✅ Returns error for missing id
 - ✅ Returns error for invalid data
 
 **deleteProduct** (Soft Delete):
+
 - ✅ Sets deleted_at timestamp
 - ✅ Returns error for missing id
 
 **processSale**:
+
 - ✅ Processes sale with valid data
 - ✅ Creates sale items
 - ✅ Returns error for invalid items
@@ -116,17 +123,20 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 - ✅ Includes store_id in sale and sale_items
 
 **logout**:
+
 - ✅ Signs out user and redirects
 - ✅ Returns error on sign out failure
 
 ### 4. E2E Tests (`app.spec.ts`)
 
 **Authentication**:
+
 - ✅ Redirect to login when not authenticated
 - ✅ Login successfully
 - ✅ Show error for invalid credentials
 
 **Products**:
+
 - ✅ Display product list
 - ✅ Add new product
 - ✅ Search products
@@ -134,12 +144,14 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 - ✅ Soft delete product
 
 **Sales**:
+
 - ✅ Switch to sales tab
 - ✅ Add product to cart
 - ✅ Open cart and checkout
 - ✅ Process sale and clear cart
 
 **Sales History**:
+
 - ✅ View sales history
 - ✅ Filter by today
 - ✅ Filter by week (7 days)
@@ -147,11 +159,13 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 - ✅ Show total revenue
 
 **Profile**:
+
 - ✅ Navigate to profile
 - ✅ Toggle theme
 - ✅ Logout
 
 **Navigation**:
+
 - ✅ Show bottom navigation
 - ✅ Highlight active tab
 
@@ -160,24 +174,24 @@ Coverage reports are generated in the `coverage/` directory after running `npm r
 Use the factory functions in `src/lib/test-utils/factories.ts` to create test data:
 
 ```typescript
-import { 
-  createProduct, 
-  createCartItem, 
+import {
+  createProduct,
+  createCartItem,
   createSale,
   createMockSupabaseClient,
   createMockLocals,
   createMockFormData,
-  createMockCookies 
-} from "$lib/test-utils/factories";
+  createMockCookies,
+} from '$lib/test-utils/factories'
 
 // Create a test product
-const product = createProduct({ 
-  name: "Test Product", 
-  price: 100 
-});
+const product = createProduct({
+  name: 'Test Product',
+  price: 100,
+})
 
 // Create mock Supabase client
-const supabase = createMockSupabaseClient();
+const supabase = createMockSupabaseClient()
 ```
 
 ## CI/CD Integration
@@ -195,40 +209,40 @@ Coverage reports are uploaded to Codecov for tracking.
 ### Unit Test Example
 
 ```typescript
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest'
 
-describe("Feature", () => {
-  it("should do something", () => {
-    const result = myFunction();
-    expect(result).toBe(expectedValue);
-  });
-});
+describe('Feature', () => {
+  it('should do something', () => {
+    const result = myFunction()
+    expect(result).toBe(expectedValue)
+  })
+})
 ```
 
 ### Component Test Example
 
 ```typescript
-import { render, screen } from "@testing-library/svelte";
-import MyComponent from "./MyComponent.svelte";
+import { render, screen } from '@testing-library/svelte'
+import MyComponent from './MyComponent.svelte'
 
-describe("MyComponent", () => {
-  it("renders correctly", () => {
-    render(MyComponent, { props: { title: "Test" } });
-    expect(screen.getByText("Test")).toBeInTheDocument();
-  });
-});
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    render(MyComponent, { props: { title: 'Test' } })
+    expect(screen.getByText('Test')).toBeInTheDocument()
+  })
+})
 ```
 
 ### E2E Test Example
 
 ```typescript
-import { test, expect } from "@playwright/test";
+import { test, expect } from '@playwright/test'
 
-test("user can complete action", async ({ page }) => {
-  await page.goto("/");
-  await page.click("button");
-  await expect(page.locator("text=Success")).toBeVisible();
-});
+test('user can complete action', async ({ page }) => {
+  await page.goto('/')
+  await page.click('button')
+  await expect(page.locator('text=Success')).toBeVisible()
+})
 ```
 
 ## Mocking
@@ -240,11 +254,13 @@ All external dependencies (Supabase, cookies, etc.) are mocked in the test facto
 ### Tests failing locally?
 
 1. Make sure all dependencies are installed:
+
    ```bash
    npm install
    ```
 
 2. Clear Vitest cache:
+
    ```bash
    npx vitest --clearCache
    ```

@@ -1,22 +1,28 @@
 <script lang="ts">
-  import { Dialog, DialogHeader, DialogTitle, DialogDescription, Button } from "$lib/components/ui";
-  import { enhance } from "$app/forms";
-  import { products } from "$lib/stores";
-  import { toast } from "svelte-sonner";
-  import type { Product } from "$lib/types";
+  import {
+    Dialog,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    Button,
+  } from '$lib/components/ui'
+  import { enhance } from '$app/forms'
+  import { products } from '$lib/stores'
+  import { toast } from 'svelte-sonner'
+  import type { Product } from '$lib/types'
 
   interface Props {
-    open: boolean;
-    product: Product | null;
-    onclose: () => void;
+    open: boolean
+    product: Product | null
+    onclose: () => void
   }
 
-  let { open = $bindable(false), product, onclose }: Props = $props();
-  let isSubmitting = $state(false);
+  let { open = $bindable(false), product, onclose }: Props = $props()
+  let isSubmitting = $state(false)
 
   function handleClose() {
-    open = false;
-    onclose();
+    open = false
+    onclose()
   }
 </script>
 
@@ -24,7 +30,8 @@
   <DialogHeader>
     <DialogTitle>Excluir Produto</DialogTitle>
     <DialogDescription>
-      Tem certeza que deseja excluir <strong>{product?.name}</strong>? Essa ação não pode ser desfeita.
+      Tem certeza que deseja excluir <strong>{product?.name}</strong>? Essa ação
+      não pode ser desfeita.
     </DialogDescription>
   </DialogHeader>
 
@@ -32,39 +39,45 @@
     method="POST"
     action="?/deleteProduct"
     use:enhance={() => {
-      isSubmitting = true;
-      
+      isSubmitting = true
+
       return async ({ result, update }) => {
-        isSubmitting = false;
-        
-        if (result.type === "success") {
-          const data = result.data as { success: boolean; error?: string };
+        isSubmitting = false
+
+        if (result.type === 'success') {
+          const data = result.data as { success: boolean; error?: string }
           if (data?.success && product) {
-            products.delete(product.id);
-            toast.success("Produto excluído");
-            open = false;
+            products.delete(product.id)
+            toast.success('Produto excluído')
+            open = false
           } else if (data?.error) {
-            toast.error("Erro", {
+            toast.error('Erro', {
               description: data.error,
-            });
+            })
           }
-        } else if (result.type === "failure") {
-          const data = result.data as { error?: string };
-          toast.error("Erro", {
-            description: data?.error || "Ocorreu um erro",
-          });
+        } else if (result.type === 'failure') {
+          const data = result.data as { error?: string }
+          toast.error('Erro', {
+            description: data?.error || 'Ocorreu um erro',
+          })
         }
-        
-        await update();
-      };
+
+        await update()
+      }
     }}
     class="flex flex-col gap-2 pt-4 sm:flex-row"
   >
     {#if product}
       <input type="hidden" name="id" value={product.id} />
     {/if}
-    
-    <Button type="button" variant="outline" onclick={handleClose} class="touch-target flex-1" disabled={isSubmitting}>
+
+    <Button
+      type="button"
+      variant="outline"
+      onclick={handleClose}
+      class="touch-target flex-1"
+      disabled={isSubmitting}
+    >
       Cancelar
     </Button>
     <Button
