@@ -83,7 +83,7 @@
         <h3 class="mb-1 text-lg font-semibold">Sem produtos</h3>
         <p class="text-sm text-muted-foreground">
           {$searchQuery
-            ? 'Try a different search term'
+            ? 'Tente um termo de pesquisa diferente'
             : 'Adicione um produto para começar'}
         </p>
       </div>
