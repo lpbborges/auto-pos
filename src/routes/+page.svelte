@@ -1,22 +1,27 @@
 <script lang="ts">
-  import { BottomNav, InventoryView, SalesView, ProfileView } from "$lib/components";
-  import { products } from "$lib/stores";
-  import type { PageData } from "./$types";
+  import {
+    BottomNav,
+    InventoryView,
+    SalesView,
+    ProfileView,
+  } from '$lib/components'
+  import { products } from '$lib/stores'
+  import type { PageData } from './$types'
 
   interface Props {
-    data: PageData;
+    data: PageData
   }
 
-  let { data }: Props = $props();
+  let { data }: Props = $props()
 
   // Initialize products store with server data
   $effect(() => {
     if (data.products) {
-      products.set(data.products);
+      products.set(data.products)
     }
-  });
+  })
 
-  let activeTab = $state<"inventory" | "sales" | "profile">("inventory");
+  let activeTab = $state<'inventory' | 'sales' | 'profile'>('inventory')
 </script>
 
 <svelte:head>
@@ -25,9 +30,9 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-  {#if activeTab === "inventory"}
+  {#if activeTab === 'inventory'}
     <InventoryView />
-  {:else if activeTab === "sales"}
+  {:else if activeTab === 'sales'}
     <SalesView />
   {:else}
     <ProfileView user={data.user} store={data.store} />

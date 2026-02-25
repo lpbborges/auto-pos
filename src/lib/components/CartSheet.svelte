@@ -1,24 +1,38 @@
 <script lang="ts">
-  import { Minus, Plus, Trash2 } from "lucide-svelte";
-  import { Sheet, SheetHeader, SheetTitle, Button, Separator } from "$lib/components/ui";
-  import { formatCurrency } from "$lib/utils";
-  import type { CartItem } from "$lib/types";
+  import { Minus, Plus, Trash2 } from 'lucide-svelte'
+  import {
+    Sheet,
+    SheetHeader,
+    SheetTitle,
+    Button,
+    Separator,
+  } from '$lib/components/ui'
+  import { formatCurrency } from '$lib/utils'
+  import type { CartItem } from '$lib/types'
 
   interface Props {
-    open: boolean;
-    items: CartItem[];
-    total: number;
-    onupdatequantity: (productId: string, quantity: number) => void;
-    onremoveitem: (productId: string) => void;
-    oncheckout: () => void;
-    onclose: () => void;
+    open: boolean
+    items: CartItem[]
+    total: number
+    onupdatequantity: (productId: string, quantity: number) => void
+    onremoveitem: (productId: string) => void
+    oncheckout: () => void
+    onclose: () => void
   }
 
-  let { open = $bindable(false), items, total, onupdatequantity, onremoveitem, oncheckout, onclose }: Props = $props();
+  let {
+    open = $bindable(false),
+    items,
+    total,
+    onupdatequantity,
+    onremoveitem,
+    oncheckout,
+    onclose,
+  }: Props = $props()
 
   function handleClose() {
-    open = false;
-    onclose();
+    open = false
+    onclose()
   }
 </script>
 
@@ -28,7 +42,9 @@
   </SheetHeader>
 
   {#if items.length === 0}
-    <div class="flex flex-1 flex-col items-center justify-center text-center py-16">
+    <div
+      class="flex flex-1 flex-col items-center justify-center text-center py-16"
+    >
       <p class="text-muted-foreground">Seu carrinho está vazio</p>
     </div>
   {:else}
@@ -44,12 +60,15 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <div class="flex items-center gap-1 rounded-lg border border-border">
+              <div
+                class="flex items-center gap-1 rounded-lg border border-border"
+              >
                 <Button
                   variant="ghost"
                   size="icon"
                   class="h-9 w-9"
-                  onclick={() => onupdatequantity(item.product.id, item.quantity - 1)}
+                  onclick={() =>
+                    onupdatequantity(item.product.id, item.quantity - 1)}
                 >
                   <Minus class="h-4 w-4" />
                 </Button>
@@ -60,7 +79,8 @@
                   variant="ghost"
                   size="icon"
                   class="h-9 w-9"
-                  onclick={() => onupdatequantity(item.product.id, item.quantity + 1)}
+                  onclick={() =>
+                    onupdatequantity(item.product.id, item.quantity + 1)}
                   disabled={item.quantity >= item.product.stock}
                 >
                   <Plus class="h-4 w-4" />

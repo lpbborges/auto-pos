@@ -14,7 +14,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -30,6 +34,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/compat": "^2.0.2",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^1.0.1",
     "@playwright/test": "^1.40.0",
     "@sveltejs/adapter-vercel": "^6.3.1",
     "@sveltejs/kit": "^2.15.1",
@@ -41,10 +48,16 @@
     "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^2.46.1",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
+    "jiti": "^2.6.1",
     "jsdom": "^24.0.0",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
+    "prettier": "^3.8.1",
+    "prettier-plugin-svelte": "^3.5.0",
     "svelte": "^5.16.0",
     "svelte-check": "^4.1.4",
     "tailwindcss": "^3.4.17",

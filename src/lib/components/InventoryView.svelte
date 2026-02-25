@@ -1,27 +1,36 @@
 <script lang="ts">
-  import { Search, Plus, Pencil, Trash2, Package, Receipt } from "lucide-svelte";
-  import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui";
-  import PageHeader from "./PageHeader.svelte";
-  import ProductFormDialog from "./ProductFormDialog.svelte";
-  import DeleteProductDialog from "./DeleteProductDialog.svelte";
-  import { formatCurrency } from "$lib/utils";
-  import { filteredProducts, searchQuery } from "$lib/stores";
-  import type { Product } from "$lib/types";
+  import { Search, Plus, Pencil, Trash2, Package, Receipt } from 'lucide-svelte'
+  import {
+    Input,
+    Button,
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell,
+  } from '$lib/components/ui'
+  import PageHeader from './PageHeader.svelte'
+  import ProductFormDialog from './ProductFormDialog.svelte'
+  import DeleteProductDialog from './DeleteProductDialog.svelte'
+  import { formatCurrency } from '$lib/utils'
+  import { filteredProducts, searchQuery } from '$lib/stores'
+  import type { Product } from '$lib/types'
 
-  let isAddDialogOpen = $state(false);
-  let isUpdateDialogOpen = $state(false);
-  let editingProduct = $state<Product | null>(null);
-  let isDeleteDialogOpen = $state(false);
-  let deletingProduct = $state<Product | null>(null);
+  let isAddDialogOpen = $state(false)
+  let isUpdateDialogOpen = $state(false)
+  let editingProduct = $state<Product | null>(null)
+  let isDeleteDialogOpen = $state(false)
+  let deletingProduct = $state<Product | null>(null)
 
   function triggerUpdate(product: Product) {
-    editingProduct = product;
-    isUpdateDialogOpen = true;
+    editingProduct = product
+    isUpdateDialogOpen = true
   }
 
   function triggerDelete(product: Product) {
-    deletingProduct = product;
-    isDeleteDialogOpen = true;
+    deletingProduct = product
+    isDeleteDialogOpen = true
   }
 </script>
 
@@ -35,7 +44,11 @@
       >
         <Receipt class="h-5 w-5" />
       </a>
-      <Button size="sm" onclick={() => (isAddDialogOpen = true)} class="touch-target gap-2 hidden md:flex">
+      <Button
+        size="sm"
+        onclick={() => (isAddDialogOpen = true)}
+        class="touch-target gap-2 hidden md:flex"
+      >
         <Plus class="h-4 w-4" />
         Adicionar
       </Button>
@@ -45,7 +58,9 @@
   <!-- Search Bar -->
   <div class="border-b border-border bg-background px-4 py-3">
     <div class="relative">
-      <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search
+        class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+      />
       <Input
         type="search"
         placeholder="Procurar produtos..."
@@ -59,13 +74,17 @@
   <!-- Product Table -->
   <div class="flex-1 overflow-auto">
     {#if $filteredProducts.length === 0}
-      <div class="flex flex-col items-center justify-center px-4 py-16 text-center">
+      <div
+        class="flex flex-col items-center justify-center px-4 py-16 text-center"
+      >
         <div class="mb-4 rounded-full bg-muted p-4">
           <Package class="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 class="mb-1 text-lg font-semibold">Sem produtos</h3>
         <p class="text-sm text-muted-foreground">
-          {$searchQuery ? "Try a different search term" : "Adicione um produto para começar"}
+          {$searchQuery
+            ? 'Try a different search term'
+            : 'Adicione um produto para começar'}
         </p>
       </div>
     {:else}
@@ -85,10 +104,10 @@
               <TableCell class="text-right">
                 <span
                   class={product.stock <= 10
-                    ? "font-semibold text-destructive"
+                    ? 'font-semibold text-destructive'
                     : product.stock <= 20
-                      ? "font-medium text-accent-foreground"
-                      : ""}
+                      ? 'font-medium text-accent-foreground'
+                      : ''}
                 >
                   {product.stock}
                 </span>
@@ -144,13 +163,19 @@
   <ProductFormDialog
     open={isUpdateDialogOpen}
     product={editingProduct}
-    onclose={() => { editingProduct = null; isUpdateDialogOpen = false; }}
+    onclose={() => {
+      editingProduct = null
+      isUpdateDialogOpen = false
+    }}
   />
 
   <!-- Delete Confirmation Dialog -->
   <DeleteProductDialog
     bind:open={isDeleteDialogOpen}
     product={deletingProduct}
-    onclose={() => { deletingProduct = null; isDeleteDialogOpen = false; }}
+    onclose={() => {
+      deletingProduct = null
+      isDeleteDialogOpen = false
+    }}
   />
 </div>
