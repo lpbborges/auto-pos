@@ -48,7 +48,7 @@ export function createMockSupabaseClient(): MockSupabaseClient {
 
   const createQueryBuilder = (table: string) => {
     const currentData = [...(mockData[table] || [])]
-    const filters: Array<(record: unknown) => boolean> = []
+    const filters: Array<(record: Record<string, any>) => boolean> = []
 
     const applyFilters = () => {
       return currentData.filter((record) =>
