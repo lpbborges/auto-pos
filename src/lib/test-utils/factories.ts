@@ -28,6 +28,7 @@ export function createCartItem(overrides: Partial<CartItem> = {}): CartItem {
 export function createSale(overrides: Partial<Sale> = {}): Sale {
   return {
     id: crypto.randomUUID(),
+    paymentMethod: 'cash',
     items: [],
     total: 0,
     createdAt: new Date().toISOString(),
@@ -68,6 +69,12 @@ export function createMockSupabaseClient(): MockSupabaseClient {
         return builder
       }),
 
+      // in() adds filter for values in array
+      in: vi.fn((column: string, values: any[]) => {
+        filters.push((record) => values.includes(record[column]))
+        return builder
+      }),
+
       // is() adds null check filter
       is: vi.fn((column: string, value: any) => {
         filters.push((record) =>
@@ -102,8 +109,9 @@ export function createMockSupabaseClient(): MockSupabaseClient {
       }),
 
       // insert() creates new records
-      insert: vi.fn((records: any[]) => {
-        const newRecords = records.map((r) => ({
+      insert: vi.fn((records: any | any[]) => {
+        const recordsArray = Array.isArray(records) ? records : [records]
+        const newRecords = recordsArray.map((r) => ({
           ...r,
           id: r.id || crypto.randomUUID(),
           created_at: new Date().toISOString(),
