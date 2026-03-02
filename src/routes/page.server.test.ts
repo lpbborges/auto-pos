@@ -241,6 +241,7 @@ describe('actions', () => {
         },
       ]
       const formData = createMockFormData({
+        paymentMethod: 'cash',
         items: JSON.stringify(items),
         total: '200',
       })
@@ -277,6 +278,7 @@ describe('actions', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       locals.user = null as any
       const formData = createMockFormData({
+        paymentMethod: 'cash',
         items: JSON.stringify([]),
         total: '0',
       })

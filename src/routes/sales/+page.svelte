@@ -1,8 +1,9 @@
 <script lang="ts">
   import { formatCurrency, formatDate } from '$lib/utils'
-  import { ArrowLeft, Receipt, Package } from 'lucide-svelte'
+  import { ArrowLeft, Receipt, Package, TrendingUp } from 'lucide-svelte'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
+  import { PAYMENT_METHOD_LABELS, type PaymentMethod } from '$lib/types'
   import type { PageData } from './$types'
 
   interface Props {
@@ -26,6 +27,10 @@
       url.searchParams.set('filter', filterValue)
     }
     goto(url.toString(), { replaceState: true })
+  }
+
+  function getPaymentLabel(method: string): string {
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method
   }
 </script>
 
@@ -70,13 +75,22 @@
       {/each}
     </div>
 
-    <!-- Total Revenue -->
+    <!-- Total Revenue & Profit -->
     {#if data.totalRevenue > 0}
       <div class="border-t border-border bg-muted/50 px-4 py-2">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-muted-foreground">Total do período</span>
+          <span class="text-sm text-muted-foreground">Faturamento</span>
           <span class="text-lg font-bold text-primary"
             >{formatCurrency(data.totalRevenue)}</span
+          >
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-sm text-muted-foreground flex items-center gap-1">
+            <TrendingUp class="h-3 w-3" />
+            Lucro
+          </span>
+          <span class="text-lg font-bold text-green-600 dark:text-green-400"
+            >{formatCurrency(data.totalProfit)}</span
           >
         </div>
       </div>
@@ -122,7 +136,8 @@
                       <span class="font-medium">
                         {item.product?.name || 'Produto'}
                       </span>
-                      <span class="text-muted-foreground">×{item.quantity}</span
+                      <span class="text-muted-foreground"
+                        >&times;{item.quantity}</span
                       >
                     </div>
                     <span class="tabular-nums">
@@ -142,13 +157,31 @@
           <div
             class="flex items-center justify-between border-t border-border bg-muted/50 px-4 py-2"
           >
-            <span class="text-xs text-muted-foreground">
-              {sale.sale_items?.length || 0}
-              {sale.sale_items?.length === 1 ? 'item' : 'itens'}
-            </span>
-            <span class="text-xs text-muted-foreground font-mono">
-              #{sale.id.slice(0, 8)}
-            </span>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-muted-foreground">
+                {sale.sale_items?.length || 0}
+                {sale.sale_items?.length === 1 ? 'item' : 'itens'}
+              </span>
+              {#if sale.payment_method}
+                <span
+                  class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                >
+                  {getPaymentLabel(sale.payment_method)}
+                </span>
+              {/if}
+            </div>
+            <div class="flex items-center gap-3">
+              {#if sale.profit != null}
+                <span
+                  class="text-xs font-medium text-green-600 dark:text-green-400"
+                >
+                  Lucro: {formatCurrency(sale.profit)}
+                </span>
+              {/if}
+              <span class="text-xs text-muted-foreground font-mono">
+                #{sale.id.slice(0, 8)}
+              </span>
+            </div>
           </div>
         </div>
       {/each}

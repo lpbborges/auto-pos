@@ -21,15 +21,13 @@
 
   let name = $state('')
   let price = $state(0)
-  let stock = $state(0)
-  let errors = $state<{ name?: string; price?: string; stock?: string }>({})
+  let errors = $state<{ name?: string; price?: string }>({})
   let isSubmitting = $state(false)
 
   $effect(() => {
     if (open) {
       name = product?.name || ''
       price = product?.price || 0
-      stock = product?.stock || 0
       errors = {}
     }
   })
@@ -68,7 +66,7 @@
             } else {
               products.add(data.product)
               toast.success('Produto adicionado', {
-                description: `${data.product.name} adicionado ao estoque.`,
+                description: `${data.product.name}. Use "Movimentação de Estoque" para adicionar quantidade.`,
               })
             }
             open = false
@@ -121,22 +119,6 @@
       />
       {#if errors.price}
         <p class="text-sm text-destructive">{errors.price}</p>
-      {/if}
-    </div>
-
-    <div class="space-y-2">
-      <label for="stock" class="text-sm font-medium">Quantidade</label>
-      <Input
-        id="stock"
-        name="stock"
-        type="number"
-        min="0"
-        placeholder="0"
-        class="touch-target"
-        bind:value={stock}
-      />
-      {#if errors.stock}
-        <p class="text-sm text-destructive">{errors.stock}</p>
       {/if}
     </div>
 

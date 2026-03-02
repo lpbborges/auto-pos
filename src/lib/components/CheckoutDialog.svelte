@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { CheckCircle2 } from 'lucide-svelte'
+  import { CheckCircle2, Banknote, QrCode, CreditCard } from 'lucide-svelte'
   import { Dialog, DialogHeader, DialogTitle, Button } from '$lib/components/ui'
-  import { formatCurrency } from '$lib/utils'
+  import { formatCurrency, cn } from '$lib/utils'
   import { enhance } from '$app/forms'
   import { products, cart } from '$lib/stores'
   import { toast } from 'svelte-sonner'
-  import type { CartItem } from '$lib/types'
+  import {
+    PAYMENT_METHOD_LABELS,
+    type CartItem,
+    type PaymentMethod,
+  } from '$lib/types'
 
   interface Props {
     open: boolean
@@ -23,6 +27,32 @@
     onclose,
   }: Props = $props()
   let isSubmitting = $state(false)
+  let selectedPayment = $state<PaymentMethod | null>(null)
+
+  const paymentOptions: {
+    value: PaymentMethod
+    label: string
+    icon: typeof Banknote
+  }[] = [
+    { value: 'cash', label: PAYMENT_METHOD_LABELS.cash, icon: Banknote },
+    { value: 'pix', label: PAYMENT_METHOD_LABELS.pix, icon: QrCode },
+    {
+      value: 'debit_card',
+      label: PAYMENT_METHOD_LABELS.debit_card,
+      icon: CreditCard,
+    },
+    {
+      value: 'credit_card',
+      label: PAYMENT_METHOD_LABELS.credit_card,
+      icon: CreditCard,
+    },
+  ]
+
+  $effect(() => {
+    if (open) {
+      selectedPayment = null
+    }
+  })
 
   function handleClose() {
     open = false
@@ -44,6 +74,28 @@
     </div>
   </DialogHeader>
 
+  <!-- Payment Method Selection -->
+  <div class="space-y-2 pt-2">
+    <p class="text-sm font-medium text-center">Forma de pagamento</p>
+    <div class="grid grid-cols-2 gap-2">
+      {#each paymentOptions as option (option.value)}
+        <button
+          type="button"
+          onclick={() => (selectedPayment = option.value)}
+          class={cn(
+            'flex items-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors',
+            selectedPayment === option.value
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border hover:border-muted-foreground/50',
+          )}
+        >
+          <option.icon class="h-4 w-4 shrink-0" />
+          <span class="truncate">{option.label}</span>
+        </button>
+      {/each}
+    </div>
+  </div>
+
   <form
     method="POST"
     action="?/processSale"
@@ -60,7 +112,6 @@
             sale?: { total: number }
           }
           if (data?.success) {
-            // Update local stock
             items.forEach((item) => {
               products.decrementStock(item.product.id, item.quantity)
             })
@@ -88,6 +139,7 @@
   >
     <input type="hidden" name="items" value={JSON.stringify(items)} />
     <input type="hidden" name="total" value={total} />
+    <input type="hidden" name="paymentMethod" value={selectedPayment ?? ''} />
 
     <Button
       type="button"
@@ -101,7 +153,7 @@
     <Button
       type="submit"
       class="touch-target flex-1 bg-success hover:bg-success/90"
-      disabled={isSubmitting}
+      disabled={isSubmitting || !selectedPayment}
     >
       {#if isSubmitting}
         Processando...

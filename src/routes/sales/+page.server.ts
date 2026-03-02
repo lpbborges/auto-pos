@@ -16,7 +16,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     )
     .order('created_at', { ascending: false })
 
-  // Apply date filters
   const now = new Date()
 
   if (filter === 'today') {
@@ -38,14 +37,30 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
   if (error) {
     console.error('Error loading sales:', error)
-    return { sales: [], filter, totalRevenue: 0 }
+    return { sales: [], filter, totalRevenue: 0, totalProfit: 0 }
   }
 
-  const salesList = sales ?? []
+  const salesList = (sales ?? []).map((sale) => {
+    const saleProfit = (sale.sale_items ?? []).reduce(
+      (
+        sum: number,
+        item: { price_at_sale: number; cost_at_sale: number; quantity: number },
+      ) =>
+        sum + (item.price_at_sale - (item.cost_at_sale ?? 0)) * item.quantity,
+      0,
+    )
+    return { ...sale, profit: saleProfit }
+  })
+
   const totalRevenue = salesList.reduce(
     (sum, sale) => sum + (sale.total || 0),
     0,
   )
 
-  return { sales: salesList, filter, totalRevenue }
+  const totalProfit = salesList.reduce(
+    (sum, sale) => sum + (sale.profit || 0),
+    0,
+  )
+
+  return { sales: salesList, filter, totalRevenue, totalProfit }
 }
