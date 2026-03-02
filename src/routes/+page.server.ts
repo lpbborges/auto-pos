@@ -1,10 +1,10 @@
 import { redirect } from '@sveltejs/kit'
+import { v7 as generateUUIDv7 } from 'uuid'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
   const user = locals.user
 
-  // Fetch products (excluding soft-deleted)
   const { data: products, error: productsError } = await locals.supabase
     .from('products')
     .select('*')
@@ -15,7 +15,6 @@ export const load: PageServerLoad = async ({ locals }) => {
     console.error('Error loading products:', productsError)
   }
 
-  // Fetch user store membership
   let store = null
   if (user) {
     const { data: membership } = await locals.supabase
@@ -49,13 +48,11 @@ export const actions: Actions = {
     const formData = await request.formData()
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
-    const stock = parseInt(formData.get('stock') as string)
 
-    if (!name || isNaN(price) || isNaN(stock)) {
+    if (!name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
     }
 
-    // Get user's store membership
     const user = locals.user
     if (!user) {
       return { success: false, error: 'User not authenticated' }
@@ -73,7 +70,7 @@ export const actions: Actions = {
 
     const { data, error } = await locals.supabase
       .from('products')
-      .insert([{ name, price, stock, store_id: membership.store_id }])
+      .insert([{ name, price, stock: 0, store_id: membership.store_id }])
       .select()
       .single()
 
@@ -90,15 +87,14 @@ export const actions: Actions = {
     const id = formData.get('id') as string
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
-    const stock = parseInt(formData.get('stock') as string)
 
-    if (!id || !name || isNaN(price) || isNaN(stock)) {
+    if (!id || !name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
     }
 
     const { data, error } = await locals.supabase
       .from('products')
-      .update({ name, price, stock, updated_at: new Date().toISOString() })
+      .update({ name, price, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single()
@@ -119,7 +115,6 @@ export const actions: Actions = {
       return { success: false, error: 'Product ID is required' }
     }
 
-    // Soft delete: set deleted_at to current timestamp
     const { error } = await locals.supabase
       .from('products')
       .update({ deleted_at: new Date().toISOString() })
@@ -133,18 +128,23 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  processSale: async ({ request, locals }) => {
+  createStockIn: async ({ request, locals }) => {
     const formData = await request.formData()
-    const itemsJson = formData.get('items') as string
-    const total = parseFloat(formData.get('total') as string)
+    const productId = formData.get('productId') as string
+    const quantity = parseInt(formData.get('quantity') as string)
+    const unitCost = parseFloat(formData.get('unitCost') as string)
+    const reason = (formData.get('reason') as string) || 'Entrada manual'
 
-    if (!itemsJson || isNaN(total)) {
-      return { success: false, error: 'Invalid sale data' }
+    if (
+      !productId ||
+      isNaN(quantity) ||
+      quantity <= 0 ||
+      isNaN(unitCost) ||
+      unitCost < 0
+    ) {
+      return { success: false, error: 'Dados inválidos' }
     }
 
-    const items = JSON.parse(itemsJson)
-
-    // Get user's store membership
     const user = locals.user
     if (!user) {
       return { success: false, error: 'User not authenticated' }
@@ -160,10 +160,178 @@ export const actions: Actions = {
       return { success: false, error: 'User is not a member of any store' }
     }
 
-    // Create the sale first
+    const { error: movementError } = await locals.supabase
+      .from('stock_movements')
+      .insert({
+        id: generateUUIDv7(),
+        product_id: productId,
+        store_id: membership.store_id,
+        type: 'in',
+        quantity,
+        unit_cost: unitCost,
+        reason,
+      })
+
+    if (movementError) {
+      console.error('Error creating stock in:', movementError)
+      return { success: false, error: movementError.message }
+    }
+
+    const { data: product } = await locals.supabase
+      .from('products')
+      .select('stock')
+      .eq('id', productId)
+      .single()
+
+    if (product) {
+      const { error: stockError } = await locals.supabase
+        .from('products')
+        .update({
+          stock: product.stock + quantity,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', productId)
+
+      if (stockError) {
+        console.error('Error updating stock:', stockError)
+        return { success: false, error: stockError.message }
+      }
+    }
+
+    return { success: true }
+  },
+
+  createStockOut: async ({ request, locals }) => {
+    const formData = await request.formData()
+    const productId = formData.get('productId') as string
+    const quantity = parseInt(formData.get('quantity') as string)
+    const reason = (formData.get('reason') as string) || 'Saída manual'
+
+    if (!productId || isNaN(quantity) || quantity <= 0) {
+      return { success: false, error: 'Dados inválidos' }
+    }
+
+    const user = locals.user
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: membership } = await locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return { success: false, error: 'User is not a member of any store' }
+    }
+
+    const { data: product } = await locals.supabase
+      .from('products')
+      .select('stock')
+      .eq('id', productId)
+      .single()
+
+    if (!product || product.stock < quantity) {
+      return { success: false, error: 'Estoque insuficiente' }
+    }
+
+    const { error: movementError } = await locals.supabase
+      .from('stock_movements')
+      .insert({
+        id: generateUUIDv7(),
+        product_id: productId,
+        store_id: membership.store_id,
+        type: 'out',
+        quantity,
+        reason,
+      })
+
+    if (movementError) {
+      console.error('Error creating stock out:', movementError)
+      return { success: false, error: movementError.message }
+    }
+
+    const { error: stockError } = await locals.supabase
+      .from('products')
+      .update({
+        stock: product.stock - quantity,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', productId)
+
+    if (stockError) {
+      console.error('Error updating stock:', stockError)
+      return { success: false, error: stockError.message }
+    }
+
+    return { success: true }
+  },
+
+  processSale: async ({ request, locals }) => {
+    const formData = await request.formData()
+    const itemsJson = formData.get('items') as string
+    const total = parseFloat(formData.get('total') as string)
+    const paymentMethod = formData.get('paymentMethod') as string
+
+    if (!itemsJson || isNaN(total)) {
+      return { success: false, error: 'Invalid sale data' }
+    }
+
+    const validPaymentMethods = ['cash', 'pix', 'debit_card', 'credit_card']
+    if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
+      return { success: false, error: 'Selecione uma forma de pagamento' }
+    }
+
+    const items = JSON.parse(itemsJson)
+
+    const user = locals.user
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: membership } = await locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return { success: false, error: 'User is not a member of any store' }
+    }
+
+    const productIds = items.map(
+      (item: { product: { id: string } }) => item.product.id,
+    )
+
+    const { data: costData } = await locals.supabase
+      .from('stock_movements')
+      .select('product_id, quantity, unit_cost')
+      .in('product_id', productIds)
+      .eq('type', 'in')
+      .eq('store_id', membership.store_id)
+
+    const avgCostMap: Record<string, number> = {}
+    if (costData) {
+      const grouped: Record<string, { totalCost: number; totalQty: number }> =
+        {}
+      for (const row of costData) {
+        if (!grouped[row.product_id]) {
+          grouped[row.product_id] = { totalCost: 0, totalQty: 0 }
+        }
+        grouped[row.product_id].totalCost += row.unit_cost * row.quantity
+        grouped[row.product_id].totalQty += row.quantity
+      }
+      for (const [pid, data] of Object.entries(grouped)) {
+        avgCostMap[pid] = data.totalQty > 0 ? data.totalCost / data.totalQty : 0
+      }
+    }
+
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
-      .insert([{ total, store_id: membership.store_id }])
+      .insert([
+        { total, store_id: membership.store_id, payment_method: paymentMethod },
+      ])
       .select()
       .single()
 
@@ -172,13 +340,13 @@ export const actions: Actions = {
       return { success: false, error: saleError.message }
     }
 
-    // Insert sale items
     const saleItems = items.map(
       (item: { product: { id: string; price: number }; quantity: number }) => ({
         sale_id: sale.id,
         product_id: item.product.id,
         quantity: item.quantity,
         price_at_sale: item.product.price,
+        cost_at_sale: avgCostMap[item.product.id] ?? 0,
         store_id: membership.store_id,
       }),
     )
@@ -192,15 +360,35 @@ export const actions: Actions = {
       return { success: false, error: itemsError.message }
     }
 
-    // Update stock for each item
     for (const item of items) {
+      const typedItem = item as {
+        product: { id: string; stock: number }
+        quantity: number
+      }
+
+      const { error: movementError } = await locals.supabase
+        .from('stock_movements')
+        .insert({
+          id: generateUUIDv7(),
+          product_id: typedItem.product.id,
+          store_id: membership.store_id,
+          type: 'out',
+          quantity: typedItem.quantity,
+          reason: 'Venda',
+          sale_id: sale.id,
+        })
+
+      if (movementError) {
+        console.error('Error creating stock movement:', movementError)
+      }
+
       const { error: stockError } = await locals.supabase
         .from('products')
         .update({
-          stock: item.product.stock - item.quantity,
+          stock: typedItem.product.stock - typedItem.quantity,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', item.product.id)
+        .eq('id', typedItem.product.id)
 
       if (stockError) {
         console.error('Error updating stock:', stockError)

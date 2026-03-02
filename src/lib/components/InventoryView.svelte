@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { Search, Plus, Pencil, Trash2, Package, Receipt } from 'lucide-svelte'
+  import {
+    Search,
+    Plus,
+    Pencil,
+    Trash2,
+    Package,
+    Receipt,
+    ArrowLeftRight,
+  } from 'lucide-svelte'
   import {
     Input,
     Button,
@@ -13,6 +21,7 @@
   import PageHeader from './PageHeader.svelte'
   import ProductFormDialog from './ProductFormDialog.svelte'
   import DeleteProductDialog from './DeleteProductDialog.svelte'
+  import StockMovementDialog from './StockMovementDialog.svelte'
   import { formatCurrency } from '$lib/utils'
   import { filteredProducts, searchQuery } from '$lib/stores'
   import type { Product } from '$lib/types'
@@ -22,6 +31,8 @@
   let editingProduct = $state<Product | null>(null)
   let isDeleteDialogOpen = $state(false)
   let deletingProduct = $state<Product | null>(null)
+  let isStockMovementOpen = $state(false)
+  let stockMovementProduct = $state<Product | null>(null)
 
   function triggerUpdate(product: Product) {
     editingProduct = product
@@ -31,6 +42,11 @@
   function triggerDelete(product: Product) {
     deletingProduct = product
     isDeleteDialogOpen = true
+  }
+
+  function triggerStockMovement(product: Product) {
+    stockMovementProduct = product
+    isStockMovementOpen = true
   }
 </script>
 
@@ -120,6 +136,16 @@
                   <Button
                     variant="ghost"
                     size="icon"
+                    onclick={() => triggerStockMovement(product)}
+                    class="h-9 w-9"
+                    title="Movimentação de estoque"
+                  >
+                    <ArrowLeftRight class="h-4 w-4" />
+                    <span class="sr-only">Movimentação</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onclick={() => triggerUpdate(product)}
                     class="h-9 w-9"
                   >
@@ -176,6 +202,16 @@
     onclose={() => {
       deletingProduct = null
       isDeleteDialogOpen = false
+    }}
+  />
+
+  <!-- Stock Movement Dialog -->
+  <StockMovementDialog
+    bind:open={isStockMovementOpen}
+    product={stockMovementProduct}
+    onclose={() => {
+      stockMovementProduct = null
+      isStockMovementOpen = false
     }}
   />
 </div>
