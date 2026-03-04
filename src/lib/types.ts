@@ -11,11 +11,14 @@ export interface UserStoreMembership {
   createdAt: string
 }
 
+import type { ProductUnit } from './constants'
+
 export interface Product {
   id: string
   name: string
   price: number
   stock: number
+  unit: ProductUnit
   storeId: string
   createdAt: string
   updatedAt: string

@@ -48,9 +48,16 @@ export const actions: Actions = {
     const formData = await request.formData()
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
+    const unit = (formData.get('unit') as string) || 'und'
+    const stock = parseFloat(formData.get('stock') as string) || 0
 
     if (!name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
+    }
+
+    const validUnits = ['kg', 'g', 'lt', 'und']
+    if (!validUnits.includes(unit)) {
+      return { success: false, error: 'Invalid unit' }
     }
 
     const user = locals.user
@@ -70,13 +77,26 @@ export const actions: Actions = {
 
     const { data, error } = await locals.supabase
       .from('products')
-      .insert([{ name, price, stock: 0, store_id: membership.store_id }])
+      .insert([{ name, price, stock, unit, store_id: membership.store_id }])
       .select()
       .single()
 
     if (error) {
       console.error('Error creating product:', error)
       return { success: false, error: error.message }
+    }
+
+    if (stock > 0) {
+      await locals.supabase.from('stock_movements').insert([
+        {
+          id: generateUUIDv7(),
+          product_id: data.id,
+          store_id: membership.store_id,
+          type: 'in',
+          quantity: stock,
+          reason: 'Estoque inicial',
+        },
+      ])
     }
 
     return { success: true, product: data }
@@ -87,14 +107,23 @@ export const actions: Actions = {
     const id = formData.get('id') as string
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
+    const unit = (formData.get('unit') as string) || 'und'
+    const stock = parseFloat(formData.get('stock') as string) || 0
+    const previousStock =
+      parseFloat(formData.get('previousStock') as string) || 0
 
     if (!id || !name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
     }
 
+    const validUnits = ['kg', 'g', 'lt', 'und']
+    if (!validUnits.includes(unit)) {
+      return { success: false, error: 'Invalid unit' }
+    }
+
     const { data, error } = await locals.supabase
       .from('products')
-      .update({ name, price, updated_at: new Date().toISOString() })
+      .update({ name, price, unit, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single()
@@ -102,6 +131,36 @@ export const actions: Actions = {
     if (error) {
       console.error('Error updating product:', error)
       return { success: false, error: error.message }
+    }
+
+    const user = locals.user
+    if (user) {
+      const { data: membership } = await locals.supabase
+        .from('store_memberships')
+        .select('store_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (membership) {
+        const stockDelta = stock - previousStock
+        if (stockDelta !== 0) {
+          await locals.supabase.from('stock_movements').insert([
+            {
+              id: generateUUIDv7(),
+              product_id: id,
+              store_id: membership.store_id,
+              type: stockDelta > 0 ? 'in' : 'out',
+              quantity: Math.abs(stockDelta),
+              reason: 'Ajuste manual',
+            },
+          ])
+
+          await locals.supabase
+            .from('products')
+            .update({ stock, updated_at: new Date().toISOString() })
+            .eq('id', id)
+        }
+      }
     }
 
     return { success: true, product: data }
@@ -131,7 +190,7 @@ export const actions: Actions = {
   createStockIn: async ({ request, locals }) => {
     const formData = await request.formData()
     const productId = formData.get('productId') as string
-    const quantity = parseInt(formData.get('quantity') as string)
+    const quantity = parseFloat(formData.get('quantity') as string)
     const unitCost = parseFloat(formData.get('unitCost') as string)
     const reason = (formData.get('reason') as string) || 'Entrada manual'
 
@@ -204,7 +263,7 @@ export const actions: Actions = {
   createStockOut: async ({ request, locals }) => {
     const formData = await request.formData()
     const productId = formData.get('productId') as string
-    const quantity = parseInt(formData.get('quantity') as string)
+    const quantity = parseFloat(formData.get('quantity') as string)
     const reason = (formData.get('reason') as string) || 'Saída manual'
 
     if (!productId || isNaN(quantity) || quantity <= 0) {

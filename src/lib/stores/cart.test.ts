@@ -128,7 +128,7 @@ describe('cart store', () => {
   })
 
   describe('cartItemCount', () => {
-    it('should count total items', () => {
+    it('should count distinct items', () => {
       const product1 = createProduct({ id: '1' })
       const product2 = createProduct({ id: '2' })
 
@@ -136,7 +136,7 @@ describe('cart store', () => {
       cart.add(product1)
       cart.add(product2)
 
-      expect(get(cartItemCount)).toBe(3)
+      expect(get(cartItemCount)).toBe(2)
     })
 
     it('should return 0 for empty cart', () => {

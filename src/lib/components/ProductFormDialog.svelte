@@ -10,6 +10,13 @@
   import { enhance } from '$app/forms'
   import { products } from '$lib/stores'
   import { toast } from 'svelte-sonner'
+  import {
+    PRODUCT_UNITS,
+    UNIT_LABELS,
+    UNIT_ALLOWS_FRACTIONS,
+    UNIT_STEP,
+  } from '$lib/constants'
+  import type { ProductUnit } from '$lib/constants'
 
   interface Props {
     open: boolean
@@ -21,6 +28,8 @@
 
   let name = $state('')
   let price = $state(0)
+  let unit = $state<ProductUnit>('und')
+  let stock = $state(0)
   let errors = $state<{ name?: string; price?: string }>({})
   let isSubmitting = $state(false)
 
@@ -28,6 +37,8 @@
     if (open) {
       name = product?.name || ''
       price = product?.price || 0
+      unit = product?.unit || 'und'
+      stock = product?.stock || 0
       errors = {}
     }
   })
@@ -35,6 +46,10 @@
   function handleClose() {
     open = false
     onclose()
+  }
+
+  function getStockStep(): string {
+    return UNIT_ALLOWS_FRACTIONS[unit] ? '0.001' : '1'
   }
 </script>
 
@@ -89,6 +104,7 @@
   >
     {#if product}
       <input type="hidden" name="id" value={product.id} />
+      <input type="hidden" name="previousStock" value={product.stock} />
     {/if}
 
     <div class="space-y-2">
@@ -106,6 +122,20 @@
     </div>
 
     <div class="space-y-2">
+      <label for="unit" class="text-sm font-medium">Unidade</label>
+      <select
+        id="unit"
+        name="unit"
+        bind:value={unit}
+        class="touch-target w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      >
+        {#each PRODUCT_UNITS as u}
+          <option value={u}>{UNIT_LABELS[u]} ({u})</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="space-y-2">
       <label for="price" class="text-sm font-medium">Preço (R$)</label>
       <Input
         id="price"
@@ -120,6 +150,20 @@
       {#if errors.price}
         <p class="text-sm text-destructive">{errors.price}</p>
       {/if}
+    </div>
+
+    <div class="space-y-2">
+      <label for="stock" class="text-sm font-medium">Quantidade ({unit})</label>
+      <Input
+        id="stock"
+        name="stock"
+        type="number"
+        step={getStockStep()}
+        min="0"
+        placeholder="0"
+        class="touch-target"
+        bind:value={stock}
+      />
     </div>
 
     <div class="flex gap-3 pt-2">
