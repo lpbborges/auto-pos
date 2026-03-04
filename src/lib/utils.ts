@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import type { ProductUnit } from './constants'
+import { UNIT_ALLOWS_FRACTIONS } from './constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -10,6 +12,17 @@ export function formatCurrency(amount: number): string {
     style: 'currency',
     currency: 'BRL',
   }).format(amount)
+}
+
+export function formatQuantity(quantity: number, unit: ProductUnit): string {
+  if (UNIT_ALLOWS_FRACTIONS[unit]) {
+    return `${quantity.toFixed(3)} ${unit}`
+  }
+  return `${Math.round(quantity)} ${unit}`
+}
+
+export function formatPricePerUnit(price: number, unit: ProductUnit): string {
+  return `${formatCurrency(price)}/${unit}`
 }
 
 export function formatDate(dateString: string): string {

@@ -6,9 +6,15 @@
     SheetTitle,
     Button,
     Separator,
+    Input,
   } from '$lib/components/ui'
-  import { formatCurrency } from '$lib/utils'
+  import {
+    formatCurrency,
+    formatPricePerUnit,
+    formatQuantity,
+  } from '$lib/utils'
   import type { CartItem } from '$lib/types'
+  import { UNIT_ALLOWS_FRACTIONS } from '$lib/constants'
 
   interface Props {
     open: boolean
@@ -55,37 +61,65 @@
             <div class="flex-1 min-w-0">
               <h4 class="font-medium truncate">{item.product.name}</h4>
               <p class="text-sm text-muted-foreground">
-                {formatCurrency(item.product.price)} cada
+                {formatPricePerUnit(item.product.price, item.product.unit)}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                {formatQuantity(item.quantity, item.product.unit)} × {formatPricePerUnit(
+                  item.product.price,
+                  item.product.unit,
+                )} = {formatCurrency(item.quantity * item.product.price)}
               </p>
             </div>
 
             <div class="flex items-center gap-2">
-              <div
-                class="flex items-center gap-1 rounded-lg border border-border"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-9 w-9"
-                  onclick={() =>
-                    onupdatequantity(item.product.id, item.quantity - 1)}
+              {#if UNIT_ALLOWS_FRACTIONS[item.product.unit]}
+                <div class="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    step="0.001"
+                    min="0.001"
+                    max={item.product.stock}
+                    value={item.quantity}
+                    onchange={(e) => {
+                      const val = parseFloat(e.currentTarget.value)
+                      if (val > 0 && val <= item.product.stock) {
+                        onupdatequantity(item.product.id, val)
+                      }
+                    }}
+                    class="h-9 w-24 text-center"
+                  />
+                  <span class="text-sm text-muted-foreground"
+                    >{item.product.unit}</span
+                  >
+                </div>
+              {:else}
+                <div
+                  class="flex items-center gap-1 rounded-lg border border-border"
                 >
-                  <Minus class="h-4 w-4" />
-                </Button>
-                <span class="min-w-[2rem] text-center font-medium">
-                  {item.quantity}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-9 w-9"
-                  onclick={() =>
-                    onupdatequantity(item.product.id, item.quantity + 1)}
-                  disabled={item.quantity >= item.product.stock}
-                >
-                  <Plus class="h-4 w-4" />
-                </Button>
-              </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-9 w-9"
+                    onclick={() =>
+                      onupdatequantity(item.product.id, item.quantity - 1)}
+                  >
+                    <Minus class="h-4 w-4" />
+                  </Button>
+                  <span class="min-w-[2rem] text-center font-medium">
+                    {item.quantity}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-9 w-9"
+                    onclick={() =>
+                      onupdatequantity(item.product.id, item.quantity + 1)}
+                    disabled={item.quantity >= item.product.stock}
+                  >
+                    <Plus class="h-4 w-4" />
+                  </Button>
+                </div>
+              {/if}
 
               <Button
                 variant="ghost"

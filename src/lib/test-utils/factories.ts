@@ -8,6 +8,7 @@ export function createProduct(overrides: Partial<Product> = {}): Product {
     name: 'Test Product',
     price: 100,
     stock: 10,
+    unit: 'und',
     storeId: 'store-1',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -28,7 +29,7 @@ export function createCartItem(overrides: Partial<CartItem> = {}): CartItem {
 export function createSale(overrides: Partial<Sale> = {}): Sale {
   return {
     id: crypto.randomUUID(),
-    paymentMethod: 'cash',
+    paymentMethod: overrides.paymentMethod ?? 'cash',
     items: [],
     total: 0,
     createdAt: new Date().toISOString(),

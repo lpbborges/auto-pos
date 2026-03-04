@@ -6,11 +6,12 @@
     Button,
     Input,
   } from '$lib/components/ui'
-  import { cn } from '$lib/utils'
+  import { cn, formatQuantity } from '$lib/utils'
   import type { Product, StockMovementType } from '$lib/types'
   import { enhance } from '$app/forms'
   import { products } from '$lib/stores'
   import { toast } from 'svelte-sonner'
+  import { UNIT_ALLOWS_FRACTIONS } from '$lib/constants'
 
   interface Props {
     open: boolean
@@ -43,6 +44,20 @@
   const formAction = $derived(
     movementType === 'in' ? '?/createStockIn' : '?/createStockOut',
   )
+
+  function getQuantityStep(): string {
+    if (product && UNIT_ALLOWS_FRACTIONS[product.unit]) {
+      return '0.001'
+    }
+    return '1'
+  }
+
+  function getQuantityMin(): string {
+    if (product && UNIT_ALLOWS_FRACTIONS[product.unit]) {
+      return '0.001'
+    }
+    return '1'
+  }
 </script>
 
 <Dialog bind:open onclose={handleClose} class="max-w-[95vw] sm:max-w-md">
@@ -50,7 +65,10 @@
     <DialogTitle>Movimentação de Estoque</DialogTitle>
     {#if product}
       <p class="text-sm text-muted-foreground">
-        {product.name} — Estoque atual: {product.stock}
+        {product.name} — Estoque atual: {formatQuantity(
+          product.stock,
+          product.unit,
+        )}
       </p>
     {/if}
   </DialogHeader>
@@ -125,12 +143,15 @@
     <input type="hidden" name="productId" value={product?.id ?? ''} />
 
     <div class="space-y-2">
-      <label for="quantity" class="text-sm font-medium">Quantidade</label>
+      <label for="quantity" class="text-sm font-medium"
+        >Quantidade ({product?.unit})</label
+      >
       <Input
         id="quantity"
         name="quantity"
         type="number"
-        min="1"
+        step={getQuantityStep()}
+        min={getQuantityMin()}
         max={movementType === 'out' ? (product?.stock ?? 0) : undefined}
         placeholder="0"
         class="touch-target"

@@ -1,10 +1,24 @@
 <script lang="ts">
   import { Search, ShoppingCart, Receipt } from 'lucide-svelte'
-  import { Input, Button, Card, CardContent, Badge } from '$lib/components/ui'
+  import {
+    Input,
+    Button,
+    Card,
+    CardContent,
+    Badge,
+    Dialog,
+    DialogHeader,
+    DialogTitle,
+  } from '$lib/components/ui'
   import PageHeader from './PageHeader.svelte'
   import CartSheet from './CartSheet.svelte'
   import CheckoutDialog from './CheckoutDialog.svelte'
-  import { cn, formatCurrency } from '$lib/utils'
+  import {
+    cn,
+    formatCurrency,
+    formatPricePerUnit,
+    formatQuantity,
+  } from '$lib/utils'
   import {
     availableProducts,
     searchQuery,
@@ -13,9 +27,12 @@
     cartItemCount,
   } from '$lib/stores'
   import type { Product } from '$lib/types'
+  import { UNIT_ALLOWS_FRACTIONS } from '$lib/constants'
 
   let isCartOpen = $state(false)
   let isCheckoutOpen = $state(false)
+  let quantityInputProduct = $state<Product | null>(null)
+  let quantityInputValue = $state('')
 
   function handleCheckout() {
     isCartOpen = false
@@ -28,9 +45,33 @@
   }
 
   function handleAddToCart(product: Product) {
-    const cartQty = getCartQuantity(product.id)
-    if (product.stock > cartQty) {
-      cart.add(product)
+    if (UNIT_ALLOWS_FRACTIONS[product.unit]) {
+      quantityInputProduct = product
+      quantityInputValue = ''
+    } else {
+      const cartQty = getCartQuantity(product.id)
+      if (product.stock > cartQty) {
+        cart.add(product)
+      }
+    }
+  }
+
+  function confirmFractionalAdd() {
+    const qty = parseFloat(quantityInputValue)
+    if (quantityInputProduct && qty > 0 && isFinite(qty)) {
+      const cartQty = getCartQuantity(quantityInputProduct.id)
+      if (cartQty + qty <= quantityInputProduct.stock) {
+        cart.add(quantityInputProduct, qty)
+      }
+      quantityInputProduct = null
+    }
+  }
+
+  function handleQuantityInputKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      confirmFractionalAdd()
+    } else if (e.key === 'Escape') {
+      quantityInputProduct = null
     }
   }
 </script>
@@ -125,8 +166,31 @@
                     {product.name}
                   </h3>
                   <p class="mt-1 text-lg font-bold text-primary">
-                    {formatCurrency(product.price)}
+                    {formatPricePerUnit(product.price, product.unit)}
                   </p>
+                </div>
+                <div class="mt-2 flex items-center justify-between">
+                  <span
+                    class={cn(
+                      'text-xs',
+                      isOutOfStock
+                        ? 'font-medium text-destructive'
+                        : isLowStock
+                          ? 'font-medium text-accent-foreground'
+                          : 'text-muted-foreground',
+                    )}
+                  >
+                    {isOutOfStock
+                      ? 'Sem estoque'
+                      : isLowStock
+                        ? 'Limite de estoque alcançado'
+                        : `${formatQuantity(product.stock, product.unit)} restantes`}
+                  </span>
+                  {#if cartQty > 0}
+                    <Badge variant="secondary" class="text-xs">
+                      {formatQuantity(cartQty, product.unit)}
+                    </Badge>
+                  {/if}
                 </div>
                 <div class="mt-2 flex items-center justify-between">
                   <span
@@ -203,4 +267,28 @@
     items={$cart}
     onclose={() => (isCheckoutOpen = false)}
   />
+
+  <!-- Quantity Input Dialog for Fractional Products -->
+  {#if quantityInputProduct}
+    <Dialog open={true} onclose={() => (quantityInputProduct = null)}>
+      <DialogHeader>
+        <DialogTitle>Quantidade ({quantityInputProduct.unit})</DialogTitle>
+      </DialogHeader>
+      <div class="space-y-4 mt-4">
+        <Input
+          type="number"
+          step="0.001"
+          min="0.001"
+          placeholder="0.000"
+          bind:value={quantityInputValue}
+          class="touch-target"
+          autofocus
+          onkeydown={handleQuantityInputKeydown}
+        />
+        <Button onclick={confirmFractionalAdd} class="w-full touch-target">
+          Adicionar ao carrinho
+        </Button>
+      </div>
+    </Dialog>
+  {/if}
 </div>

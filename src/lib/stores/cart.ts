@@ -6,17 +6,17 @@ function createCartStore() {
 
   return {
     subscribe,
-    add: (product: Product) => {
+    add: (product: Product, quantity: number = 1) => {
       update((items) => {
         const existing = items.find((item) => item.product.id === product.id)
         if (existing) {
           return items.map((item) =>
             item.product.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, quantity: item.quantity + quantity }
               : item,
           )
         }
-        return [...items, { product, quantity: 1 }]
+        return [...items, { product, quantity }]
       })
     },
     remove: (productId: string) => {
@@ -43,6 +43,4 @@ export const cartTotal = derived(cart, ($cart) =>
   $cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
 )
 
-export const cartItemCount = derived(cart, ($cart) =>
-  $cart.reduce((sum, item) => sum + item.quantity, 0),
-)
+export const cartItemCount = derived(cart, ($cart) => $cart.length)
