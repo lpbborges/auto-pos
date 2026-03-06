@@ -17,7 +17,7 @@
     <button
       onclick={() => ontabchange('inventory')}
       class={cn(
-        'flex min-h-[44px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
+        'flex min-h-11 min-w-18 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
         activeTab === 'inventory'
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -30,7 +30,7 @@
     <button
       onclick={() => ontabchange('sales')}
       class={cn(
-        'flex min-h-[44px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
+        'flex min-h-11 min-w-18 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
         activeTab === 'sales'
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -43,7 +43,7 @@
     <button
       onclick={() => ontabchange('profile')}
       class={cn(
-        'flex min-h-[44px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
+        'flex min-h-11 min-w-18 flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors',
         activeTab === 'profile'
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',

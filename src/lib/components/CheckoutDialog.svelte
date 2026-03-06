@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckCircle2, Banknote, QrCode, CreditCard } from 'lucide-svelte'
+  import { CircleCheckBig, Banknote, QrCode, CreditCard } from 'lucide-svelte'
   import { Dialog, DialogHeader, DialogTitle, Button } from '$lib/components/ui'
   import { formatCurrency, cn } from '$lib/utils'
   import { enhance } from '$app/forms'
@@ -19,13 +19,7 @@
     onclose: () => void
   }
 
-  let {
-    open = $bindable(false),
-    total,
-    itemCount,
-    items,
-    onclose,
-  }: Props = $props()
+  let { open = $bindable(false), total, items, onclose }: Props = $props()
   let isSubmitting = $state(false)
   let selectedPayment = $state<PaymentMethod | null>(null)
 
@@ -65,12 +59,13 @@
     <div
       class="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-success/10"
     >
-      <CheckCircle2 class="h-8 w-8 text-success" />
+      <CircleCheckBig class="h-8 w-8 text-success" />
     </div>
     <DialogTitle class="text-xl">Confirmar Venda</DialogTitle>
     <div class="space-y-1 text-sm text-muted-foreground">
-      <p>{itemCount} {itemCount === 1 ? 'item' : 'itens'}</p>
-      <p class="text-2xl font-bold text-foreground">{formatCurrency(total)}</p>
+      <p class="mt-3 text-2xl font-bold text-foreground">
+        {formatCurrency(total)}
+      </p>
     </div>
   </DialogHeader>
 

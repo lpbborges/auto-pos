@@ -35,8 +35,8 @@ export type PaymentMethod = 'cash' | 'pix' | 'debit_card' | 'credit_card'
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Dinheiro',
   pix: 'PIX',
-  debit_card: 'Cartão de Débito',
-  credit_card: 'Cartão de Crédito',
+  debit_card: 'Débito',
+  credit_card: 'Crédito',
 }
 
 export interface Sale {
