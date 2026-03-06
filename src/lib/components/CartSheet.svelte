@@ -61,9 +61,6 @@
             <div class="flex-1 min-w-0">
               <h4 class="font-medium truncate">{item.product.name}</h4>
               <p class="text-sm text-muted-foreground">
-                {formatPricePerUnit(item.product.price, item.product.unit)}
-              </p>
-              <p class="text-sm text-muted-foreground">
                 {formatQuantity(item.quantity, item.product.unit)} × {formatPricePerUnit(
                   item.product.price,
                   item.product.unit,
@@ -105,7 +102,7 @@
                   >
                     <Minus class="h-4 w-4" />
                   </Button>
-                  <span class="min-w-[2rem] text-center font-medium">
+                  <span class="min-w-8 text-center font-medium">
                     {item.quantity}
                   </span>
                   <Button
