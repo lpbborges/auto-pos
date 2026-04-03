@@ -41,7 +41,7 @@
 <div class="min-h-screen bg-background pb-20">
   <!-- Header -->
   <header
-    class="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    class="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60"
   >
     <div class="flex h-14 items-center justify-between px-4">
       <div class="flex items-center gap-3">
