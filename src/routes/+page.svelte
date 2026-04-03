@@ -4,6 +4,7 @@
     InventoryView,
     SalesView,
     ProfileView,
+    AssistantView,
   } from '$lib/components'
   import { products } from '$lib/stores'
   import type { PageData } from './$types'
@@ -14,14 +15,15 @@
 
   let { data }: Props = $props()
 
-  // Initialize products store with server data
   $effect(() => {
     if (data.products) {
       products.set(data.products)
     }
   })
 
-  let activeTab = $state<'inventory' | 'sales' | 'profile'>('inventory')
+  let activeTab = $state<'inventory' | 'sales' | 'profile' | 'assistant'>(
+    'inventory',
+  )
 </script>
 
 <svelte:head>
@@ -34,6 +36,8 @@
     <InventoryView />
   {:else if activeTab === 'sales'}
     <SalesView />
+  {:else if activeTab === 'assistant'}
+    <AssistantView />
   {:else}
     <ProfileView user={data.user} store={data.store} />
   {/if}
