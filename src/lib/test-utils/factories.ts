@@ -99,6 +99,18 @@ export function createMockSupabaseClient(): MockSupabaseClient {
         return builder
       }),
 
+      // lte() adds filter
+      lte: vi.fn((column: string, value: any) => {
+        filters.push((record) => record[column] <= value)
+        return builder
+      }),
+
+      // limit() limits results
+      limit: vi.fn((n: number) => {
+        currentData.splice(n)
+        return builder
+      }),
+
       // single() executes query and returns single result
       single: vi.fn(() => {
         const filtered = applyFilters()
