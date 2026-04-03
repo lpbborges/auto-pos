@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from './+server'
 import { createMockLocals, createMockCookies } from '$lib/test-utils/factories'
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => {
-  const mockCreate = vi.fn().mockResolvedValue({
+// Hoist mockCreate so it is available inside the vi.mock factory (which is hoisted by vitest)
+const { mockCreate } = vi.hoisted(() => ({
+  mockCreate: vi.fn().mockResolvedValue({
     stop_reason: 'end_turn',
     content: [{ type: 'text', text: 'Here is how you add a product...' }],
-  })
+  }),
+}))
+
+// Mock the Anthropic SDK
+vi.mock('@anthropic-ai/sdk', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function MockAnthropic(_opts: any) {
     return { messages: { create: mockCreate } }
@@ -18,7 +22,6 @@ vi.mock('@anthropic-ai/sdk', () => {
 // Mock env
 vi.mock('$env/static/private', () => ({
   ANTHROPIC_API_KEY: 'test-key',
-  AI_PROVIDER: 'claude',
 }))
 
 function createRequestEvent(body: object, localsOverride?: object) {
@@ -37,6 +40,10 @@ function createRequestEvent(body: object, localsOverride?: object) {
 describe('POST /api/internal/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCreate.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'Here is how you add a product...' }],
+    })
   })
 
   it('returns 401 when user is not authenticated', async () => {
@@ -70,6 +77,15 @@ describe('POST /api/internal/chat', () => {
     expect(response.status).toBe(403)
   })
 
+  it('returns 400 when message is empty', async () => {
+    const event = createRequestEvent({
+      message: '',
+      conversationHistory: [],
+    }) as any
+    const response = await POST(event)
+    expect(response.status).toBe(400)
+  })
+
   it('returns 200 with a streamed text response for valid request', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const event = createRequestEvent({
@@ -82,7 +98,7 @@ describe('POST /api/internal/chat', () => {
     expect(response.headers.get('Content-Type')).toContain('text/plain')
   })
 
-  it('accepts conversationHistory up to 10 messages', async () => {
+  it('caps conversationHistory to 10 messages before forwarding to Claude', async () => {
     const history = Array.from({ length: 15 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: `message ${i}`,
@@ -95,7 +111,9 @@ describe('POST /api/internal/chat', () => {
     }) as any
     const response = await POST(event)
 
-    // Should not fail — history is capped server-side
     expect(response.status).toBe(200)
+    // The messages array sent to Claude must be at most 11 (10 history + 1 new message)
+    const callArgs = mockCreate.mock.calls[0][0]
+    expect(callArgs.messages.length).toBeLessThanOrEqual(11)
   })
 })
