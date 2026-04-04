@@ -183,15 +183,18 @@ export async function executeToolCall(
         if (error) return { error: 'Could not create product' }
 
         if (stock > 0) {
-          await supabase.from('stock_movements').insert({
-            id: generateUUIDv7(),
-            product_id: data.id,
-            store_id: storeId,
-            type: 'in',
-            quantity: stock,
-            unit_cost: 0,
-            reason: 'Estoque inicial',
-          })
+          const { error: movementError } = await supabase
+            .from('stock_movements')
+            .insert({
+              id: generateUUIDv7(),
+              product_id: data.id,
+              store_id: storeId,
+              type: 'in',
+              quantity: stock,
+              unit_cost: 0,
+              reason: 'Estoque inicial',
+            })
+          if (movementError) return { error: 'Could not create stock movement' }
         }
 
         return data

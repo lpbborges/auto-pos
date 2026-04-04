@@ -175,11 +175,19 @@ describe('executeToolCall', () => {
         supabase,
       )
       expect(supabase.from).toHaveBeenCalledWith('stock_movements')
-      // Verify the insert was called with unit_cost (required by DB CHECK constraint)
-      const movementsFrom = supabase.from.mock.calls.find(
+      // Find the insert call on the stock_movements builder and verify unit_cost is present
+      const calls = supabase.from.mock.calls
+      const movementsCallIndex = calls.findIndex(
         ([t]: [string]) => t === 'stock_movements',
       )
-      expect(movementsFrom).toBeDefined()
+      expect(movementsCallIndex).toBeGreaterThanOrEqual(0)
+      // The builder returned by supabase.from('stock_movements') had insert called on it
+      // Verify by checking the insert mock was called with unit_cost: 0
+      const movementsBuilder =
+        supabase.from.mock.results[movementsCallIndex]?.value
+      expect(movementsBuilder.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ unit_cost: 0, type: 'in' }),
+      )
     })
 
     it('returns error for missing name', async () => {
