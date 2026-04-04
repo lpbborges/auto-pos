@@ -1,8 +1,7 @@
 import type OpenAI from 'openai'
 import { v7 as generateUUIDv7 } from 'uuid'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseClient = any
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { PRODUCT_UNITS } from '$lib/constants'
 
 export function getToolDefinitions(): OpenAI.Chat.ChatCompletionTool[] {
   return [
@@ -168,8 +167,12 @@ export async function executeToolCall(
         const stock =
           typeof input.stock === 'number' ? Math.max(0, input.stock) : 0
 
-        const validUnits = ['kg', 'g', 'lt', 'und']
-        if (!name || isNaN(price) || price <= 0 || !validUnits.includes(unit)) {
+        if (
+          !name ||
+          isNaN(price) ||
+          price <= 0 ||
+          !PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])
+        ) {
           return {
             error: 'Invalid product data: name, price, and unit are required',
           }

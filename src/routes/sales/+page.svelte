@@ -61,7 +61,7 @@
 
     <!-- Filter Chips -->
     <div class="flex items-center gap-2 border-t border-border px-4 py-2">
-      {#each filters as filter}
+      {#each filters as filter (filter.value)}
         <button
           onclick={() => setFilter(filter.value)}
           class="rounded-full px-3 py-1 text-xs font-medium transition-colors {data.filter ===

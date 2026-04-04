@@ -3,6 +3,21 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async ({ locals, url }) => {
   const filter = url.searchParams.get('filter') || 'all'
 
+  const { session } = await locals.safeGetSession()
+  if (!session) {
+    return { sales: [], filter, totalRevenue: 0, totalProfit: 0 }
+  }
+
+  const { data: membership } = await locals.supabase
+    .from('store_memberships')
+    .select('store_id')
+    .eq('user_id', session.user.id)
+    .single()
+
+  if (!membership) {
+    return { sales: [], filter, totalRevenue: 0, totalProfit: 0 }
+  }
+
   let query = locals.supabase
     .from('sales')
     .select(
@@ -14,6 +29,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       )
     `,
     )
+    .eq('store_id', membership.store_id)
     .order('created_at', { ascending: false })
 
   const now = new Date()

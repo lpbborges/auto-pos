@@ -63,6 +63,7 @@
     "prettier-plugin-svelte": "^3.5.0",
     "svelte": "^5.53.5",
     "svelte-check": "^4.4.3",
+    "svelte-eslint-parser": "^1.6.0",
     "tailwindcss": "^4.2.1",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3",

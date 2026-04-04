@@ -8,7 +8,8 @@ A mobile-first Point of Sale system built with SvelteKit, Tailwind CSS, and Type
 - **Sales Processing**: Quick product selection and cart management
 - **Dark/Light Theme**: Toggle between themes with mode-watcher
 - **Mobile-First Design**: Touch-friendly interface with bottom navigation
-- **Local Storage**: Data persists in browser localStorage
+- **Supabase Backend**: Data persists in Supabase with real-time sync
+- **AI Assistant**: Natural language interface for inventory and sales queries
 
 ## Tech Stack
 

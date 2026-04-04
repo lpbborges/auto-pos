@@ -108,6 +108,36 @@ describe('products store', () => {
       const value = get(products)
       expect(value[0].stock).toBe(0)
     })
+
+    it('should be a no-op with quantity 0', () => {
+      const product = createProduct({ stock: 5 })
+      products.add(product)
+
+      products.decrementStock(product.id, 0)
+
+      const value = get(products)
+      expect(value[0].stock).toBe(5)
+    })
+
+    it('should ignore negative quantities', () => {
+      const product = createProduct({ stock: 5 })
+      products.add(product)
+
+      products.decrementStock(product.id, -3)
+
+      const value = get(products)
+      expect(value[0].stock).toBe(5)
+    })
+
+    it('should do nothing for non-existent product ID', () => {
+      const product = createProduct({ stock: 5 })
+      products.add(product)
+
+      products.decrementStock('nonexistent', 3)
+
+      const value = get(products)
+      expect(value[0].stock).toBe(5)
+    })
   })
 
   describe('filteredProducts', () => {

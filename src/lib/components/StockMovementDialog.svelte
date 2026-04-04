@@ -26,6 +26,7 @@
   let unitCost = $state(0)
   let reason = $state('')
   let isSubmitting = $state(false)
+  let currentStock = $state(0)
 
   $effect(() => {
     if (open) {
@@ -33,6 +34,7 @@
       quantity = 1
       unitCost = 0
       reason = ''
+      currentStock = product?.stock ?? 0
     }
   })
 
@@ -113,10 +115,10 @@
         if (result.type === 'success') {
           const data = result.data as { success: boolean; error?: string }
           if (data?.success && product) {
-            const stockChange = movementType === 'in' ? quantity : -quantity
             products.updateProduct({
               ...product,
-              stock: product.stock + stockChange,
+              stock:
+                currentStock + (movementType === 'in' ? quantity : -quantity),
             })
             toast.success(
               movementType === 'in' ? 'Entrada registrada' : 'Saída registrada',
