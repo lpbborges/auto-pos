@@ -1,5 +1,5 @@
-import { ANTHROPIC_API_KEY } from '$env/static/private'
-import Anthropic from '@anthropic-ai/sdk'
+import { OLLAMA_BASE_URL, OLLAMA_MODEL } from '$env/static/private'
+import OpenAI from 'openai'
 import type { RequestEvent } from '@sveltejs/kit'
 import { getSystemPrompt } from '$lib/ai/system-prompt'
 import { getToolDefinitions, executeToolCall } from '$lib/ai/tools'
@@ -57,8 +57,9 @@ export async function POST(event: RequestEvent) {
     return new Response('Bad Request', { status: 400 })
   }
 
-  // 4. Build messages for Claude
-  const messages: Anthropic.Messages.MessageParam[] = [
+  // 4. Build messages for the model
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: getSystemPrompt() },
     ...conversationHistory.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
@@ -66,75 +67,76 @@ export async function POST(event: RequestEvent) {
     { role: 'user', content: message },
   ]
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+  const client = new OpenAI({
+    baseURL: OLLAMA_BASE_URL,
+    apiKey: 'ollama',
+  })
+
   const tools = getToolDefinitions()
+  const model = OLLAMA_MODEL
 
   // 5. Tool-use loop (wrapped in error boundary)
   try {
-    let response = await client.messages.create({
-      model: 'claude-opus-4-6',
-      max_tokens: 1024,
-      system: getSystemPrompt(),
-      tools,
+    let response = await client.chat.completions.create({
+      model,
       messages,
+      tools,
     })
 
     let iterations = 0
     while (
-      response.stop_reason === 'tool_use' &&
+      response.choices[0].finish_reason === 'tool_calls' &&
       iterations < MAX_TOOL_ITERATIONS
     ) {
       iterations++
 
-      const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.Messages.ToolUseBlock => b.type === 'tool_use',
-      )
+      const assistantMessage = response.choices[0].message
+      messages.push(assistantMessage)
 
-      const toolResults: Anthropic.Messages.ToolResultBlockParam[] =
-        await Promise.all(
-          toolUseBlocks.map(async (block) => {
-            const result = await executeToolCall(
-              block.name,
-              block.input as Record<string, unknown>,
-              storeId,
-              event.locals.supabase,
-            )
-            return {
-              type: 'tool_result' as const,
-              tool_use_id: block.id,
-              content: JSON.stringify(result),
-            }
-          }),
+      const toolCalls = assistantMessage.tool_calls ?? []
+
+      for (const toolCall of toolCalls) {
+        if (toolCall.type !== 'function') continue
+
+        let args: Record<string, unknown> = {}
+        try {
+          args = JSON.parse(toolCall.function.arguments)
+        } catch {
+          // malformed args — proceed with empty input, executor has defaults
+        }
+
+        const result = await executeToolCall(
+          toolCall.function.name,
+          args,
+          storeId,
+          event.locals.supabase,
         )
 
-      messages.push(
-        { role: 'assistant', content: response.content },
-        { role: 'user', content: toolResults },
-      )
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(result),
+        })
+      }
 
-      response = await client.messages.create({
-        model: 'claude-opus-4-6',
-        max_tokens: 1024,
-        system: getSystemPrompt(),
-        tools,
+      response = await client.chat.completions.create({
+        model,
         messages,
+        tools,
       })
     }
 
     if (
       iterations >= MAX_TOOL_ITERATIONS &&
-      response.stop_reason === 'tool_use'
+      response.choices[0].finish_reason === 'tool_calls'
     ) {
       return new Response('Assistant failed to produce a response', {
         status: 500,
       })
     }
 
-    // 6. Extract final text and stream it back
-    const textBlock = response.content.find(
-      (b): b is Anthropic.Messages.TextBlock => b.type === 'text',
-    )
-    const finalText = textBlock?.text ?? ''
+    // 6. Stream final text back
+    const finalText = response.choices[0].message.content ?? ''
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
@@ -147,7 +149,8 @@ export async function POST(event: RequestEvent) {
     return new Response(stream, {
       headers: { 'Content-Type': 'text/plain' },
     })
-  } catch {
+  } catch (err) {
+    console.error('[chat] Error:', err)
     return new Response('Internal Server Error', { status: 500 })
   }
 }

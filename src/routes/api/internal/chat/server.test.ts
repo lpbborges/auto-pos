@@ -5,23 +5,31 @@ import { createMockLocals, createMockCookies } from '$lib/test-utils/factories'
 // Hoist mockCreate so it is available inside the vi.mock factory (which is hoisted by vitest)
 const { mockCreate } = vi.hoisted(() => ({
   mockCreate: vi.fn().mockResolvedValue({
-    stop_reason: 'end_turn',
-    content: [{ type: 'text', text: 'Here is how you add a product...' }],
+    choices: [
+      {
+        finish_reason: 'stop',
+        message: {
+          content: 'Here is how you add a product...',
+          tool_calls: null,
+        },
+      },
+    ],
   }),
 }))
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => {
+// Mock the OpenAI SDK
+vi.mock('openai', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function MockAnthropic(_opts: any) {
-    return { messages: { create: mockCreate } }
+  function MockOpenAI(_opts: any) {
+    return { chat: { completions: { create: mockCreate } } }
   }
-  return { default: MockAnthropic }
+  return { default: MockOpenAI }
 })
 
 // Mock env
 vi.mock('$env/static/private', () => ({
-  ANTHROPIC_API_KEY: 'test-key',
+  OLLAMA_BASE_URL: 'http://localhost:11434/v1',
+  OLLAMA_MODEL: 'qwen2.5-coder:latest',
 }))
 
 function createRequestEvent(body: object, localsOverride?: object) {
@@ -41,8 +49,15 @@ describe('POST /api/internal/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCreate.mockResolvedValue({
-      stop_reason: 'end_turn',
-      content: [{ type: 'text', text: 'Here is how you add a product...' }],
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: {
+            content: 'Here is how you add a product...',
+            tool_calls: null,
+          },
+        },
+      ],
     })
   })
 
@@ -98,7 +113,7 @@ describe('POST /api/internal/chat', () => {
     expect(response.headers.get('Content-Type')).toContain('text/plain')
   })
 
-  it('caps conversationHistory to 10 messages before forwarding to Claude', async () => {
+  it('caps conversationHistory to 10 messages before forwarding to model', async () => {
     const history = Array.from({ length: 15 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: `message ${i}`,
@@ -112,8 +127,8 @@ describe('POST /api/internal/chat', () => {
     const response = await POST(event)
 
     expect(response.status).toBe(200)
-    // The messages array sent to Claude must be at most 11 (10 history + 1 new message)
+    // The messages array sent to the model must be at most 12 (system + 10 history + 1 new message)
     const callArgs = mockCreate.mock.calls[0][0]
-    expect(callArgs.messages.length).toBeLessThanOrEqual(11)
+    expect(callArgs.messages.length).toBeLessThanOrEqual(12)
   })
 })

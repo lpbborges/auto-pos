@@ -1,59 +1,63 @@
-import type { Tool } from '@anthropic-ai/sdk/resources'
+import type OpenAI from 'openai'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any
 
-export function getToolDefinitions(): Tool[] {
+export function getToolDefinitions(): OpenAI.Chat.ChatCompletionTool[] {
   return [
     {
-      name: 'get_products',
-      description:
-        'Returns all active products in the store with name, price, stock quantity, and unit. Use when the user asks about their inventory or product list.',
-      input_schema: {
-        type: 'object' as const,
-        properties: {},
-        required: [],
+      type: 'function',
+      function: {
+        name: 'get_products',
+        description:
+          'Returns all active products in the store with name, price, stock quantity, and unit. Use when the user asks about their inventory or product list.',
+        parameters: { type: 'object', properties: {}, required: [] },
       },
     },
     {
-      name: 'get_low_stock_items',
-      description:
-        'Returns products with stock below a threshold. Use when the user asks about low stock, what is running out, or what needs to be restocked.',
-      input_schema: {
-        type: 'object' as const,
-        properties: {
-          threshold: {
-            type: 'number',
-            description:
-              'Stock level below which a product is considered low. Defaults to 5.',
+      type: 'function',
+      function: {
+        name: 'get_low_stock_items',
+        description:
+          'Returns products with stock below a threshold. Use when the user asks about low stock, what is running out, or what needs to be restocked.',
+        parameters: {
+          type: 'object',
+          properties: {
+            threshold: {
+              type: 'number',
+              description:
+                'Stock level below which a product is considered low. Defaults to 5.',
+            },
           },
+          required: [],
         },
-        required: [],
       },
     },
     {
-      name: 'get_recent_sales',
-      description:
-        'Returns sales from the past N days with total amount and payment method. Use when the user asks about sales history, revenue, or payment breakdown.',
-      input_schema: {
-        type: 'object' as const,
-        properties: {
-          days: {
-            type: 'number',
-            description: 'Number of past days to include. Defaults to 7.',
+      type: 'function',
+      function: {
+        name: 'get_recent_sales',
+        description:
+          'Returns sales from the past N days with total amount and payment method. Use when the user asks about sales history, revenue, or payment breakdown.',
+        parameters: {
+          type: 'object',
+          properties: {
+            days: {
+              type: 'number',
+              description: 'Number of past days to include. Defaults to 7.',
+            },
           },
+          required: [],
         },
-        required: [],
       },
     },
     {
-      name: 'get_stock_movements',
-      description:
-        'Returns recent stock movement history (entries and exits) with product names. Use when the user asks about stock changes, what came in or out.',
-      input_schema: {
-        type: 'object' as const,
-        properties: {},
-        required: [],
+      type: 'function',
+      function: {
+        name: 'get_stock_movements',
+        description:
+          'Returns recent stock movement history (entries and exits) with product names. Use when the user asks about stock changes, what came in or out.',
+        parameters: { type: 'object', properties: {}, required: [] },
       },
     },
   ]

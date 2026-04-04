@@ -10,22 +10,40 @@ describe('getToolDefinitions', () => {
 
   it('includes get_products tool', () => {
     const tools = getToolDefinitions()
-    expect(tools.some((t) => t.name === 'get_products')).toBe(true)
+    expect(
+      tools.some(
+        (t) => t.type === 'function' && t.function.name === 'get_products',
+      ),
+    ).toBe(true)
   })
 
   it('includes get_low_stock_items tool', () => {
     const tools = getToolDefinitions()
-    expect(tools.some((t) => t.name === 'get_low_stock_items')).toBe(true)
+    expect(
+      tools.some(
+        (t) =>
+          t.type === 'function' && t.function.name === 'get_low_stock_items',
+      ),
+    ).toBe(true)
   })
 
   it('includes get_recent_sales tool', () => {
     const tools = getToolDefinitions()
-    expect(tools.some((t) => t.name === 'get_recent_sales')).toBe(true)
+    expect(
+      tools.some(
+        (t) => t.type === 'function' && t.function.name === 'get_recent_sales',
+      ),
+    ).toBe(true)
   })
 
   it('includes get_stock_movements tool', () => {
     const tools = getToolDefinitions()
-    expect(tools.some((t) => t.name === 'get_stock_movements')).toBe(true)
+    expect(
+      tools.some(
+        (t) =>
+          t.type === 'function' && t.function.name === 'get_stock_movements',
+      ),
+    ).toBe(true)
   })
 })
 
