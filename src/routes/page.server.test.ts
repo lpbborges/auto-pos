@@ -295,6 +295,386 @@ describe('actions', () => {
     })
   })
 
+  describe('createStockIn', () => {
+    it('should create stock in with valid data', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locals.supabase.from = vi.fn((table: string): any => {
+        if (table === 'stock_movements') {
+          return {
+            insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          }
+        }
+        if (table === 'products') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: { stock: 10 },
+                    error: null,
+                  }),
+                ),
+              })),
+            })),
+            update: vi.fn(() => ({
+              eq: vi.fn(() => Promise.resolve({ data: null, error: null })),
+            })),
+          }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() =>
+                Promise.resolve({
+                  data: { store_id: 'store-1' },
+                  error: null,
+                }),
+              ),
+            })),
+          })),
+        }
+      })
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        unitCost: '10.50',
+        reason: 'Compra fornecedor',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: true })
+    })
+
+    it('should return error for missing productId', async () => {
+      const formData = createMockFormData({
+        quantity: '5',
+        unitCost: '10.50',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for invalid quantity', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '-1',
+        unitCost: '10.50',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for zero quantity', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '0',
+        unitCost: '10.50',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for invalid unitCost', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        unitCost: 'invalid',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for negative unitCost', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        unitCost: '-1',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error when user not authenticated', async () => {
+      locals.user = null as any
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        unitCost: '10.50',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({
+        success: false,
+        error: 'User not authenticated',
+      })
+    })
+
+    it('should return error when user has no store membership', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locals.supabase.from = vi.fn((table: string): any => {
+        if (table === 'store_memberships') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({ data: null, error: null }),
+                ),
+              })),
+            })),
+          }
+        }
+        return {
+          insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        }
+      })
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        unitCost: '10.50',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockIn(
+        event as unknown as Parameters<Actions['createStockIn']>[0],
+      )
+
+      expect(result).toEqual({
+        success: false,
+        error: 'User is not a member of any store',
+      })
+    })
+  })
+
+  describe('createStockOut', () => {
+    it('should create stock out with valid data', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locals.supabase.from = vi.fn((table: string): any => {
+        if (table === 'stock_movements') {
+          return {
+            insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          }
+        }
+        if (table === 'products') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: { stock: 20 },
+                    error: null,
+                  }),
+                ),
+              })),
+            })),
+            update: vi.fn(() => ({
+              eq: vi.fn(() => Promise.resolve({ data: null, error: null })),
+            })),
+          }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() =>
+                Promise.resolve({
+                  data: { store_id: 'store-1' },
+                  error: null,
+                }),
+              ),
+            })),
+          })),
+        }
+      })
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+        reason: 'Avaria',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({ success: true })
+    })
+
+    it('should return error for missing productId', async () => {
+      const formData = createMockFormData({
+        quantity: '5',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for invalid quantity', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '-1',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for zero quantity', async () => {
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '0',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Dados inválidos' })
+    })
+
+    it('should return error for insufficient stock', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locals.supabase.from = vi.fn((table: string): any => {
+        if (table === 'products') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: { stock: 2 },
+                    error: null,
+                  }),
+                ),
+              })),
+            })),
+          }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() =>
+                Promise.resolve({
+                  data: { store_id: 'store-1' },
+                  error: null,
+                }),
+              ),
+            })),
+          })),
+        }
+      })
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({ success: false, error: 'Estoque insuficiente' })
+    })
+
+    it('should return error when user not authenticated', async () => {
+      locals.user = null as any
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({
+        success: false,
+        error: 'User not authenticated',
+      })
+    })
+
+    it('should return error when user has no store membership', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      locals.supabase.from = vi.fn((table: string): any => {
+        if (table === 'store_memberships') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({ data: null, error: null }),
+                ),
+              })),
+            })),
+          }
+        }
+        return {
+          insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        }
+      })
+
+      const formData = createMockFormData({
+        productId: 'prod-1',
+        quantity: '5',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = await actions.createStockOut(
+        event as unknown as Parameters<Actions['createStockOut']>[0],
+      )
+
+      expect(result).toEqual({
+        success: false,
+        error: 'User is not a member of any store',
+      })
+    })
+  })
+
   describe('logout', () => {
     it('should sign out user and redirect', async () => {
       const event = {

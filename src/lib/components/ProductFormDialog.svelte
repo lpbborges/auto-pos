@@ -30,6 +30,7 @@
   let price = $state(0)
   let unit = $state<ProductUnit>('und')
   let stock = $state(0)
+  let unitCost = $state(0)
   let errors = $state<{ name?: string; price?: string }>({})
   let isSubmitting = $state(false)
 
@@ -39,6 +40,7 @@
       price = product?.price || 0
       unit = product?.unit || 'und'
       stock = product?.stock || 0
+      unitCost = 0
       errors = {}
     }
   })
@@ -165,6 +167,24 @@
         bind:value={stock}
       />
     </div>
+
+    {#if stock > 0 && !product}
+      <div class="space-y-2">
+        <label for="unitCost" class="text-sm font-medium"
+          >Custo Unitário (R$)</label
+        >
+        <Input
+          id="unitCost"
+          name="unitCost"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          class="touch-target"
+          bind:value={unitCost}
+        />
+      </div>
+    {/if}
 
     <div class="flex gap-3 pt-2">
       <Button
