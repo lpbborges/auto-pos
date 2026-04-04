@@ -41,14 +41,12 @@ export const handle: Handle = async ({ event, resolve }) => {
     return { session, user }
   }
 
-  // Get session
-  const {
-    data: { session },
-  } = await event.locals.supabase.auth.getSession()
+  // Get session and authenticated user
+  const { session, user } = await event.locals.safeGetSession()
 
   // Set session and user on locals
   event.locals.session = session
-  event.locals.user = session?.user ?? null
+  event.locals.user = user
 
   // Check if route requires authentication
   const isAuthRoute = event.url.pathname === '/login'
