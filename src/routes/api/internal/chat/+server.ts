@@ -1,4 +1,4 @@
-import { OLLAMA_BASE_URL, OLLAMA_MODEL } from '$env/static/private'
+import { AI_BASE_URL, AI_MODEL, AI_API_KEY } from '$env/static/private'
 import OpenAI from 'openai'
 import type { RequestEvent } from '@sveltejs/kit'
 import { getSystemPrompt } from '$lib/ai/system-prompt'
@@ -68,12 +68,12 @@ export async function POST(event: RequestEvent) {
   ]
 
   const client = new OpenAI({
-    baseURL: OLLAMA_BASE_URL,
-    apiKey: 'ollama',
+    baseURL: AI_BASE_URL,
+    apiKey: AI_API_KEY,
   })
 
   const tools = getToolDefinitions()
-  const model = OLLAMA_MODEL
+  const model = AI_MODEL
 
   // 5. Tool-use loop (wrapped in error boundary)
   try {
