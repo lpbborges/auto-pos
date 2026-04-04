@@ -30,7 +30,6 @@
   let unit = $state<ProductUnit>('und')
   let stock = $state(0)
   let unitCost = $state(0)
-  let errors = $state<{ name?: string; price?: string }>({})
   let isSubmitting = $state(false)
 
   $effect(() => {
@@ -40,7 +39,6 @@
       unit = product?.unit || 'und'
       stock = product?.stock || 0
       unitCost = 0
-      errors = {}
     }
   })
 
@@ -117,9 +115,6 @@
         class="touch-target"
         bind:value={name}
       />
-      {#if errors.name}
-        <p class="text-sm text-destructive">{errors.name}</p>
-      {/if}
     </div>
 
     <div class="space-y-2">
@@ -130,7 +125,7 @@
         bind:value={unit}
         class="touch-target w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       >
-        {#each PRODUCT_UNITS as u}
+        {#each PRODUCT_UNITS as u (u)}
           <option value={u}>{UNIT_LABELS[u]} ({u})</option>
         {/each}
       </select>
@@ -148,9 +143,6 @@
         class="touch-target"
         bind:value={price}
       />
-      {#if errors.price}
-        <p class="text-sm text-destructive">{errors.price}</p>
-      {/if}
     </div>
 
     <div class="space-y-2">

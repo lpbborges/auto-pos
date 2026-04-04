@@ -1,12 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { cn, formatCurrency, formatDate } from './utils'
+import {
+  cn,
+  formatCurrency,
+  formatDate,
+  formatQuantity,
+  formatPricePerUnit,
+} from './utils'
 
 describe('cn', () => {
   it('should merge tailwind classes correctly', () => {
     const result = cn('px-2', 'py-2', 'px-4')
     expect(result).toContain('py-2')
     expect(result).toContain('px-4')
-    expect(result).not.toContain('px-2 px-4')
+    expect(result).not.toContain('px-2')
   })
 
   it('should handle conditional classes', () => {
@@ -63,5 +69,25 @@ describe('formatDate', () => {
     const date2 = new Date('2024-01-01T00:00:00').toISOString()
     const formatted2 = formatDate(date2)
     expect(formatted2).toContain('01/01/2024')
+  })
+})
+
+describe('formatQuantity', () => {
+  it('should format fractional units with 3 decimals', () => {
+    expect(formatQuantity(1.5, 'kg')).toBe('1.500 kg')
+    expect(formatQuantity(0.123, 'lt')).toBe('0.123 lt')
+    expect(formatQuantity(2, 'g')).toBe('2.000 g')
+  })
+
+  it('should format non-fractional units as integers', () => {
+    expect(formatQuantity(5, 'und')).toBe('5 und')
+    expect(formatQuantity(3.7, 'und')).toBe('4 und')
+  })
+})
+
+describe('formatPricePerUnit', () => {
+  it('should format price with unit', () => {
+    expect(formatPricePerUnit(10.5, 'kg')).toBe('R$\u00a010,50/kg')
+    expect(formatPricePerUnit(5, 'und')).toBe('R$\u00a05,00/und')
   })
 })

@@ -45,6 +45,17 @@ export interface Sale {
   total: number
   paymentMethod: PaymentMethod
   createdAt: string
+  sale_items?: {
+    id: string
+    product_id: string
+    quantity: number
+    price_at_sale: number
+    cost_at_sale: number
+    product?: { name: string }
+  }[]
+  profit?: number
+  payment_method?: string
+  created_at?: string
 }
 
 export type StockMovementType = 'in' | 'out'

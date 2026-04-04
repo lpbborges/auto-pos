@@ -100,7 +100,7 @@
         </div>
       {/if}
 
-      {#each messages as msg}
+      {#each messages as msg, i (i)}
         <div
           class={cn(
             'flex',

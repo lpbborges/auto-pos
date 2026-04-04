@@ -22,11 +22,7 @@
   import ProductFormDialog from './ProductFormDialog.svelte'
   import DeleteProductDialog from './DeleteProductDialog.svelte'
   import StockMovementDialog from './StockMovementDialog.svelte'
-  import {
-    formatCurrency,
-    formatQuantity,
-    formatPricePerUnit,
-  } from '$lib/utils'
+  import { formatQuantity, formatPricePerUnit } from '$lib/utils'
   import { filteredProducts, searchQuery } from '$lib/stores'
   import type { Product } from '$lib/types'
 

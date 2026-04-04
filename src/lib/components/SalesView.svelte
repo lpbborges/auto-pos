@@ -192,29 +192,6 @@
                     </Badge>
                   {/if}
                 </div>
-                <div class="mt-2 flex items-center justify-between">
-                  <span
-                    class={cn(
-                      'text-xs',
-                      isOutOfStock
-                        ? 'font-medium text-destructive'
-                        : isLowStock
-                          ? 'font-medium text-accent-foreground'
-                          : 'text-muted-foreground',
-                    )}
-                  >
-                    {isOutOfStock
-                      ? 'Sem estoque'
-                      : isLowStock
-                        ? 'Limite de estoque alcançado'
-                        : `${product.stock} restantes`}
-                  </span>
-                  {#if cartQty > 0}
-                    <Badge variant="secondary" class="text-xs">
-                      ×{cartQty}
-                    </Badge>
-                  {/if}
-                </div>
               </CardContent>
             </Card>
           </button>

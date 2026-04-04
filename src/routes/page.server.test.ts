@@ -149,8 +149,7 @@ describe('actions', () => {
     })
 
     it('should return error when user not authenticated', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      locals.user = null as any
+      locals.user = null
       const formData = createMockFormData({
         name: 'Test',
         price: '100',
@@ -171,11 +170,22 @@ describe('actions', () => {
 
   describe('updateProduct', () => {
     it('should update product with valid data', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(locals.supabase as any)._mockData.products.push({
+        id: 'product-1',
+        name: 'Original Name',
+        price: 100,
+        stock: 10,
+        unit: 'und',
+        store_id: 'store-1',
+      })
+
       const formData = createMockFormData({
         id: 'product-1',
         name: 'Updated Name',
         price: '150',
         stock: '20',
+        previousStock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -285,8 +295,7 @@ describe('actions', () => {
     })
 
     it('should return error when user not authenticated', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      locals.user = null as any
+      locals.user = null
       const formData = createMockFormData({
         paymentMethod: 'cash',
         items: JSON.stringify([]),
@@ -443,7 +452,7 @@ describe('actions', () => {
     })
 
     it('should return error when user not authenticated', async () => {
-      locals.user = null as any
+      locals.user = null
 
       const formData = createMockFormData({
         productId: 'prod-1',
@@ -647,7 +656,7 @@ describe('actions', () => {
     })
 
     it('should return error when user not authenticated', async () => {
-      locals.user = null as any
+      locals.user = null
 
       const formData = createMockFormData({
         productId: 'prod-1',

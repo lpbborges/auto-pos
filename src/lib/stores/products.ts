@@ -24,6 +24,8 @@ function createProductsStore(initialProducts: Product[] = []) {
       )
     },
     decrementStock: (id: string, quantity: number) => {
+      if (quantity < 0) return
+
       update((products) =>
         products.map((p) =>
           p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p,

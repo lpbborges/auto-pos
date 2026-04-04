@@ -6,8 +6,22 @@ import { includeIgnoreFile } from '@eslint/compat'
 import { defineConfig } from 'eslint/config'
 import { fileURLToPath } from 'url'
 import eslintConfigPrettier from 'eslint-config-prettier/flat'
+import sveltePlugin from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
 
 const gitignorePath = fileURLToPath(new URL('.gitignore', import.meta.url))
+
+const svelteRecommended = sveltePlugin.configs['flat/recommended'].map(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (config: any) => ({
+    ...config,
+    files: config.files ?? ['**/*.svelte'],
+    rules: {
+      ...config.rules,
+      'svelte/no-navigation-without-resolve': 'off' as const,
+    },
+  }),
+)
 
 export default defineConfig([
   includeIgnoreFile(gitignorePath, 'Imported .gitignore patterns'),
@@ -30,5 +44,15 @@ export default defineConfig([
     language: 'json/jsonc',
     extends: ['json/recommended'],
   },
+  {
+    files: ['**/*.svelte'],
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: tseslint.parser,
+      },
+    },
+  },
+  ...svelteRecommended,
   eslintConfigPrettier,
 ])

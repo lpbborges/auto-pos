@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit'
 import { v7 as generateUUIDv7 } from 'uuid'
 import type { Actions, PageServerLoad } from './$types'
+import { PRODUCT_UNITS } from '$lib/constants'
 
 export const load: PageServerLoad = async ({ locals }) => {
   const user = locals.user
@@ -57,8 +58,7 @@ export const actions: Actions = {
       return { success: false, error: 'Invalid product data' }
     }
 
-    const validUnits = ['kg', 'g', 'lt', 'und']
-    if (!validUnits.includes(unit)) {
+    if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
       return { success: false, error: 'Invalid unit' }
     }
 
@@ -129,11 +129,86 @@ export const actions: Actions = {
       return { success: false, error: 'Invalid product data' }
     }
 
-    const validUnits = ['kg', 'g', 'lt', 'und']
-    if (!validUnits.includes(unit)) {
+    if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
       return { success: false, error: 'Invalid unit' }
     }
 
+    const user = locals.user
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: membership } = await locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return { success: false, error: 'User is not a member of any store' }
+    }
+
+    const stockDelta = stock - previousStock
+
+    // Update stock first if it changed, so we can rollback atomically
+    if (stockDelta !== 0) {
+      const movementId = generateUUIDv7()
+
+      // Create stock movement first
+      const { error: movementError } = await locals.supabase
+        .from('stock_movements')
+        .insert([
+          {
+            id: movementId,
+            product_id: id,
+            store_id: membership.store_id,
+            type: stockDelta > 0 ? 'in' : 'out',
+            quantity: Math.abs(stockDelta),
+            unit_cost:
+              stockDelta > 0
+                ? isNaN(unitCost) || unitCost < 0
+                  ? 0
+                  : unitCost
+                : null,
+            reason: 'Ajuste manual',
+          },
+        ])
+
+      if (movementError) {
+        console.error('Error creating stock movement:', movementError)
+        return { success: false, error: movementError.message }
+      }
+
+      // Update stock via RPC
+      const { data: adjustResult, error: stockError } =
+        await locals.supabase.rpc('adjust_product_stock', {
+          p_product_id: id,
+          p_delta: stockDelta,
+          p_updated_at: new Date().toISOString(),
+        })
+
+      if (stockError) {
+        console.error('Error updating stock:', stockError)
+        await locals.supabase
+          .from('stock_movements')
+          .delete()
+          .eq('id', movementId)
+        return { success: false, error: stockError.message }
+      }
+
+      if (!adjustResult?.success) {
+        await locals.supabase
+          .from('stock_movements')
+          .delete()
+          .eq('id', movementId)
+        return {
+          success: false,
+          error: adjustResult?.error || 'Failed to update stock',
+        }
+      }
+    }
+
+    // Now update product details (name, price, unit)
     const { data, error } = await locals.supabase
       .from('products')
       .update({ name, price, unit, updated_at: new Date().toISOString() })
@@ -144,72 +219,6 @@ export const actions: Actions = {
     if (error) {
       console.error('Error updating product:', error)
       return { success: false, error: error.message }
-    }
-
-    const user = locals.user
-    if (user) {
-      const { data: membership } = await locals.supabase
-        .from('store_memberships')
-        .select('store_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (membership) {
-        const stockDelta = stock - previousStock
-        if (stockDelta !== 0) {
-          const { error: movementError } = await locals.supabase
-            .from('stock_movements')
-            .insert([
-              {
-                id: generateUUIDv7(),
-                product_id: id,
-                store_id: membership.store_id,
-                type: stockDelta > 0 ? 'in' : 'out',
-                quantity: Math.abs(stockDelta),
-                unit_cost:
-                  stockDelta > 0
-                    ? isNaN(unitCost) || unitCost < 0
-                      ? 0
-                      : unitCost
-                    : null,
-                reason: 'Ajuste manual',
-              },
-            ])
-
-          if (movementError) {
-            console.error('Error creating stock movement:', movementError)
-            await locals.supabase
-              .from('products')
-              .update({
-                name: data.name,
-                price: data.price,
-                unit: data.unit,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', id)
-            return { success: false, error: movementError.message }
-          }
-
-          const { error: stockError } = await locals.supabase
-            .from('products')
-            .update({ stock, updated_at: new Date().toISOString() })
-            .eq('id', id)
-
-          if (stockError) {
-            console.error('Error updating stock:', stockError)
-            await locals.supabase
-              .from('products')
-              .update({
-                name: data.name,
-                price: data.price,
-                unit: data.unit,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', id)
-            return { success: false, error: stockError.message }
-          }
-        }
-      }
     }
 
     return { success: true, product: data }
@@ -446,9 +455,45 @@ export const actions: Actions = {
       return { success: false, error: 'User is not a member of any store' }
     }
 
+    // Check stock availability for all items before processing
     const productIds = items.map(
       (item: { product: { id: string } }) => item.product.id,
     )
+
+    const { data: products, error: productsError } = await locals.supabase
+      .from('products')
+      .select('id, stock')
+      .in('id', productIds)
+      .eq('store_id', membership.store_id)
+
+    if (productsError) {
+      console.error('Error checking products:', productsError)
+      return { success: false, error: 'Erro ao verificar produtos' }
+    }
+
+    const stockMap: Record<string, number> = {}
+    if (products) {
+      for (const p of products) {
+        stockMap[p.id] = p.stock
+      }
+    }
+
+    for (const item of items) {
+      const productId = item.product.id
+      const quantity = item.quantity
+      const currentStock = stockMap[productId]
+
+      if (currentStock === undefined) {
+        return { success: false, error: `Produto não encontrado` }
+      }
+
+      if (currentStock < quantity) {
+        return {
+          success: false,
+          error: `Estoque insuficiente para ${item.product.name}`,
+        }
+      }
+    }
 
     const { data: costData } = await locals.supabase
       .from('stock_movements')

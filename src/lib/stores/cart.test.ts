@@ -45,6 +45,15 @@ describe('cart store', () => {
       const items = get(cart)
       expect(items).toHaveLength(2)
     })
+
+    it('should add product with custom quantity', () => {
+      const product = createProduct()
+      cart.add(product, 5)
+
+      const items = get(cart)
+      expect(items).toHaveLength(1)
+      expect(items[0].quantity).toBe(5)
+    })
   })
 
   describe('remove', () => {
@@ -67,6 +76,15 @@ describe('cart store', () => {
       const items = get(cart)
       expect(items).toHaveLength(1)
       expect(items[0].product.id).toBe('2')
+    })
+
+    it('should do nothing for non-existent product ID', () => {
+      const product = createProduct()
+      cart.add(product)
+
+      cart.remove('nonexistent')
+
+      expect(get(cart)).toHaveLength(1)
     })
   })
 
@@ -94,6 +112,17 @@ describe('cart store', () => {
       cart.updateQuantity(product.id, -1)
 
       expect(get(cart)).toHaveLength(0)
+    })
+
+    it('should do nothing for non-existent product ID', () => {
+      const product = createProduct()
+      cart.add(product)
+
+      cart.updateQuantity('nonexistent', 5)
+
+      const items = get(cart)
+      expect(items).toHaveLength(1)
+      expect(items[0].quantity).toBe(1)
     })
   })
 
@@ -128,7 +157,7 @@ describe('cart store', () => {
   })
 
   describe('cartItemCount', () => {
-    it('should count distinct items', () => {
+    it('should count total quantity across all items', () => {
       const product1 = createProduct({ id: '1' })
       const product2 = createProduct({ id: '2' })
 
@@ -136,7 +165,7 @@ describe('cart store', () => {
       cart.add(product1)
       cart.add(product2)
 
-      expect(get(cartItemCount)).toBe(2)
+      expect(get(cartItemCount)).toBe(3)
     })
 
     it('should return 0 for empty cart', () => {

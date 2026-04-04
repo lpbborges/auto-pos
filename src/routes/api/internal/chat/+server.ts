@@ -10,13 +10,12 @@ const MAX_TOOL_ITERATIONS = 5
 type ConversationMessage = { role: 'user' | 'assistant'; content: string }
 
 export async function POST(event: RequestEvent) {
-  // 1. Verify user via safeGetSession (validates JWT server-side)
   const { user } = await event.locals.safeGetSession()
+
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  // 2. Resolve store_id from store_memberships
   const { data: membership } = await event.locals.supabase
     .from('store_memberships')
     .select('store_id')
@@ -28,10 +27,9 @@ export async function POST(event: RequestEvent) {
   }
 
   const storeId: string = membership.store_id
-
-  // 3. Parse request body
   let message: string
   let conversationHistory: ConversationMessage[]
+
   try {
     const body = await event.request.json()
     message = String(body.message ?? '')
@@ -57,7 +55,6 @@ export async function POST(event: RequestEvent) {
     return new Response('Bad Request', { status: 400 })
   }
 
-  // 4. Build messages for the model
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'system', content: getSystemPrompt() },
     ...conversationHistory.map((m) => ({
@@ -75,7 +72,6 @@ export async function POST(event: RequestEvent) {
   const tools = getToolDefinitions()
   const model = AI_MODEL
 
-  // 5. Tool-use loop (wrapped in error boundary)
   try {
     let response = await client.chat.completions.create({
       model,
@@ -135,14 +131,27 @@ export async function POST(event: RequestEvent) {
       })
     }
 
-    // 6. Stream final text back
-    const finalText = response.choices[0].message.content ?? ''
+    const streamResponse = await client.chat.completions.create({
+      model,
+      messages,
+      stream: true,
+    })
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoder.encode(finalText))
-        controller.close()
+      async start(controller) {
+        try {
+          for await (const chunk of streamResponse) {
+            const content = chunk.choices[0]?.delta?.content
+            if (content) {
+              controller.enqueue(encoder.encode(content))
+            }
+          }
+        } catch (err) {
+          console.error('[chat] Streaming error:', err)
+        } finally {
+          controller.close()
+        }
       },
     })
 

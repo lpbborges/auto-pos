@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from './+server'
 import { createMockLocals, createMockCookies } from '$lib/test-utils/factories'
@@ -19,8 +20,7 @@ const { mockCreate } = vi.hoisted(() => ({
 
 // Mock the OpenAI SDK
 vi.mock('openai', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function MockOpenAI(_opts: any) {
+  function MockOpenAI() {
     return { chat: { completions: { create: mockCreate } } }
   }
   return { default: MockOpenAI }
@@ -68,9 +68,8 @@ describe('POST /api/internal/chat', () => {
       .fn()
       .mockResolvedValue({ session: null, user: null })
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const event = createRequestEvent({ message: 'hello' }, locals) as any
-    const response = await POST(event)
+    const event = createRequestEvent({ message: 'hello' }, locals)
+    const response = await POST(event as unknown as Parameters<typeof POST>[0])
 
     expect(response.status).toBe(401)
   })
@@ -86,9 +85,8 @@ describe('POST /api/internal/chat', () => {
         .mockResolvedValue({ data: null, error: { message: 'Not found' } }),
     })
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const event = createRequestEvent({ message: 'hello' }, locals) as any
-    const response = await POST(event)
+    const event = createRequestEvent({ message: 'hello' }, locals)
+    const response = await POST(event as unknown as Parameters<typeof POST>[0])
 
     expect(response.status).toBe(403)
   })
@@ -97,18 +95,17 @@ describe('POST /api/internal/chat', () => {
     const event = createRequestEvent({
       message: '',
       conversationHistory: [],
-    }) as any
-    const response = await POST(event)
+    })
+    const response = await POST(event as unknown as Parameters<typeof POST>[0])
     expect(response.status).toBe(400)
   })
 
   it('returns 200 with a streamed text response for valid request', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const event = createRequestEvent({
       message: 'How do I add a product?',
       conversationHistory: [],
-    }) as any
-    const response = await POST(event)
+    })
+    const response = await POST(event as unknown as Parameters<typeof POST>[0])
 
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toContain('text/plain')
@@ -120,7 +117,6 @@ describe('POST /api/internal/chat', () => {
       content: `message ${i}`,
     }))
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const event = createRequestEvent({
       message: 'test',
       conversationHistory: history,
