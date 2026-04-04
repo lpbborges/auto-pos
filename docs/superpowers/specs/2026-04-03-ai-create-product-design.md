@@ -30,12 +30,18 @@ Parameters:
 The `create_product` case in `executeToolCall`:
 
 1. Validates required fields (`name`, `price`, `unit`)
-2. Resolves the store's `store_id` from `store_memberships` using the provided `storeId` parameter (already passed to all tool executions)
+2. Uses `storeId` directly — it is already the resolved store ID passed to `executeToolCall`; no additional membership lookup needed
 3. Inserts a row into the `products` table
-4. If `stock > 0`, inserts a `stock_movements` row with `type: 'in'`, `reason: 'Estoque inicial'`
+4. If `stock > 0`, inserts a `stock_movements` row with:
+   - `id: generateUUIDv7()` — import as `import { v7 as generateUUIDv7 } from 'uuid'` (the column has no default; same pattern as `+page.server.ts`)
+   - `type: 'in'`
+   - `reason: 'Estoque inicial'`
+   - `unit_cost: 0` — the migration defines a CHECK constraint (`entry_must_have_cost`) requiring `unit_cost IS NOT NULL` for all `type = 'in'` rows; use `0` since purchase cost is unknown at AI-creation time. Note: the existing `createProduct` form action at `+page.server.ts` line 90 omits `unit_cost` and has the same constraint gap — that should be fixed separately as a follow-up.
 5. Returns the created product on success, or an error object on failure
 
-This mirrors the logic already in the `createProduct` form action in `src/routes/+page.server.ts`.
+## Confirmation Gate
+
+The confirmation step is enforced by the system prompt instruction only — there is no code-level guard preventing the tool from being called without user confirmation. This is an accepted trade-off given that Ollama models vary in instruction-following reliability. If a stricter guarantee is needed in the future, a client-side confirmation state could be added, but it is out of scope for this feature.
 
 ## System Prompt Changes
 
