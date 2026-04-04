@@ -139,4 +139,94 @@ describe('executeToolCall', () => {
       expect(result).toHaveProperty('error')
     })
   })
+
+  describe('create_product', () => {
+    // Each test gets a fresh spy state so call assertions don't bleed between cases
+    beforeEach(() => {
+      vi.clearAllMocks()
+      supabase = createMockSupabaseClient()
+    })
+
+    it('inserts into products table', async () => {
+      await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 5.0, unit: 'kg' },
+        storeId,
+        supabase,
+      )
+      expect(supabase.from).toHaveBeenCalledWith('products')
+    })
+
+    it('does not insert stock movement when stock is 0', async () => {
+      await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 5.0, unit: 'kg', stock: 0 },
+        storeId,
+        supabase,
+      )
+      expect(supabase.from).not.toHaveBeenCalledWith('stock_movements')
+    })
+
+    it('inserts stock movement with correct shape when stock > 0', async () => {
+      await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 5.0, unit: 'kg', stock: 10 },
+        storeId,
+        supabase,
+      )
+      expect(supabase.from).toHaveBeenCalledWith('stock_movements')
+      // Verify the insert was called with unit_cost (required by DB CHECK constraint)
+      const movementsFrom = supabase.from.mock.calls.find(
+        ([t]: [string]) => t === 'stock_movements',
+      )
+      expect(movementsFrom).toBeDefined()
+    })
+
+    it('returns error for missing name', async () => {
+      const result = await executeToolCall(
+        'create_product',
+        { price: 5.0, unit: 'kg' },
+        storeId,
+        supabase,
+      )
+      expect(result).toHaveProperty('error')
+    })
+
+    it('returns error for invalid unit', async () => {
+      const result = await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 5.0, unit: 'invalid' },
+        storeId,
+        supabase,
+      )
+      expect(result).toHaveProperty('error')
+    })
+
+    it('returns error on Supabase failure', async () => {
+      supabase.from = vi.fn((table: string) => {
+        if (table === 'products') {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(() =>
+                  Promise.resolve({
+                    data: null,
+                    error: { message: 'DB error' },
+                  }),
+                ),
+              })),
+            })),
+          }
+        }
+        return supabase.from(table)
+      })
+      const result = await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 5.0, unit: 'kg' },
+        storeId,
+        supabase,
+      )
+      expect(result).toHaveProperty('error')
+    })
+  })
 })

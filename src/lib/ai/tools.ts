@@ -1,4 +1,5 @@
 import type OpenAI from 'openai'
+import { v7 as generateUUIDv7 } from 'uuid'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any
@@ -157,6 +158,42 @@ export async function executeToolCall(
           .order('created_at', { ascending: false })
           .limit(50)
         if (error) return { error: 'Could not retrieve stock movements' }
+        return data
+      }
+
+      case 'create_product': {
+        const name = typeof input.name === 'string' ? input.name.trim() : ''
+        const price = typeof input.price === 'number' ? input.price : NaN
+        const unit = typeof input.unit === 'string' ? input.unit : ''
+        const stock = typeof input.stock === 'number' ? input.stock : 0
+
+        const validUnits = ['kg', 'g', 'lt', 'und']
+        if (!name || isNaN(price) || price < 0 || !validUnits.includes(unit)) {
+          return {
+            error: 'Invalid product data: name, price, and unit are required',
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('products')
+          .insert([{ name, price, unit, stock, store_id: storeId }])
+          .select()
+          .single()
+
+        if (error) return { error: 'Could not create product' }
+
+        if (stock > 0) {
+          await supabase.from('stock_movements').insert({
+            id: generateUUIDv7(),
+            product_id: data.id,
+            store_id: storeId,
+            type: 'in',
+            quantity: stock,
+            unit_cost: 0,
+            reason: 'Estoque inicial',
+          })
+        }
+
         return data
       }
 
