@@ -21,4 +21,10 @@ describe('getSystemPrompt', () => {
   it('instructs the AI to use tools for live data', () => {
     expect(getSystemPrompt()).toContain('tool')
   })
+
+  it('includes create_product confirmation guidance', () => {
+    const prompt = getSystemPrompt()
+    expect(prompt).toContain('create_product')
+    expect(prompt).toContain('Confirma')
+  })
 })
