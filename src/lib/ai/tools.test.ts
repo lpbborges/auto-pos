@@ -3,9 +3,9 @@ import { getToolDefinitions, executeToolCall } from './tools'
 import { createMockSupabaseClient } from '$lib/test-utils/factories'
 
 describe('getToolDefinitions', () => {
-  it('returns an array of 4 tools', () => {
+  it('returns an array of 5 tools', () => {
     const tools = getToolDefinitions()
-    expect(tools).toHaveLength(4)
+    expect(tools).toHaveLength(5)
   })
 
   it('includes get_products tool', () => {
@@ -42,6 +42,15 @@ describe('getToolDefinitions', () => {
       tools.some(
         (t) =>
           t.type === 'function' && t.function.name === 'get_stock_movements',
+      ),
+    ).toBe(true)
+  })
+
+  it('includes create_product tool', () => {
+    const tools = getToolDefinitions()
+    expect(
+      tools.some(
+        (t) => t.type === 'function' && t.function.name === 'create_product',
       ),
     ).toBe(true)
   })

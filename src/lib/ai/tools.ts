@@ -60,6 +60,37 @@ export function getToolDefinitions(): OpenAI.Chat.ChatCompletionTool[] {
         parameters: { type: 'object', properties: {}, required: [] },
       },
     },
+    {
+      type: 'function',
+      function: {
+        name: 'create_product',
+        description:
+          'Creates a new product in the store. Only call this after the user has confirmed the product details. Required: name, price, unit. Optional: initial stock quantity.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Product name.',
+            },
+            price: {
+              type: 'number',
+              description: 'Product price in BRL.',
+            },
+            unit: {
+              type: 'string',
+              enum: ['kg', 'g', 'lt', 'und'],
+              description: 'Unit of measure.',
+            },
+            stock: {
+              type: 'number',
+              description: 'Initial stock quantity. Defaults to 0.',
+            },
+          },
+          required: ['name', 'price', 'unit'],
+        },
+      },
+    },
   ]
 }
 
