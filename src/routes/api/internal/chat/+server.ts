@@ -53,7 +53,7 @@ export async function POST(event: RequestEvent) {
     return new Response('Bad Request', { status: 400 })
   }
 
-  if (!message.trim()) {
+  if (!message.trim() || message.length > 2000) {
     return new Response('Bad Request', { status: 400 })
   }
 

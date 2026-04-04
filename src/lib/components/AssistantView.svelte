@@ -18,6 +18,9 @@
     const text = input.trim()
     if (!text || isLoading) return
 
+    // Snapshot history before mutating messages
+    const priorHistory = [...messages]
+
     input = ''
     error = null
     messages = [...messages, { role: 'user', content: text }]
@@ -27,14 +30,12 @@
     isLoading = true
 
     try {
-      const history = messages.slice(0, -1) // exclude the empty assistant message
-
       const response = await fetch('/api/internal/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          conversationHistory: history.slice(0, -1), // exclude the user message we just added
+          conversationHistory: priorHistory,
         }),
       })
 

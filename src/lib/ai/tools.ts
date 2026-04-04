@@ -82,7 +82,9 @@ export async function executeToolCall(
 
       case 'get_low_stock_items': {
         const threshold =
-          typeof input.threshold === 'number' ? input.threshold : 5
+          typeof input.threshold === 'number'
+            ? Math.min(Math.max(input.threshold, 0), 1000)
+            : 5
         const { data, error } = await supabase
           .from('products')
           .select('name, price, stock, unit')
@@ -95,7 +97,10 @@ export async function executeToolCall(
       }
 
       case 'get_recent_sales': {
-        const days = typeof input.days === 'number' ? input.days : 7
+        const days =
+          typeof input.days === 'number'
+            ? Math.min(Math.max(input.days, 1), 90)
+            : 7
         const cutoff = new Date(
           Date.now() - days * 24 * 60 * 60 * 1000,
         ).toISOString()
