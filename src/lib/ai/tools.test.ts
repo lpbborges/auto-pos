@@ -210,6 +210,16 @@ describe('executeToolCall', () => {
       expect(result).toHaveProperty('error')
     })
 
+    it('returns error for zero price', async () => {
+      const result = await executeToolCall(
+        'create_product',
+        { name: 'Arroz', price: 0, unit: 'kg' },
+        storeId,
+        supabase,
+      )
+      expect(result).toHaveProperty('error')
+    })
+
     it('returns error on Supabase failure', async () => {
       supabase.from = vi.fn((table: string) => {
         if (table === 'products') {
@@ -226,7 +236,9 @@ describe('executeToolCall', () => {
             })),
           }
         }
-        return supabase.from(table)
+        return {
+          insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        }
       })
       const result = await executeToolCall(
         'create_product',

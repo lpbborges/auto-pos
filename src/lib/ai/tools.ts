@@ -165,10 +165,11 @@ export async function executeToolCall(
         const name = typeof input.name === 'string' ? input.name.trim() : ''
         const price = typeof input.price === 'number' ? input.price : NaN
         const unit = typeof input.unit === 'string' ? input.unit : ''
-        const stock = typeof input.stock === 'number' ? input.stock : 0
+        const stock =
+          typeof input.stock === 'number' ? Math.max(0, input.stock) : 0
 
         const validUnits = ['kg', 'g', 'lt', 'und']
-        if (!name || isNaN(price) || price < 0 || !validUnits.includes(unit)) {
+        if (!name || isNaN(price) || price <= 0 || !validUnits.includes(unit)) {
           return {
             error: 'Invalid product data: name, price, and unit are required',
           }
@@ -182,6 +183,9 @@ export async function executeToolCall(
 
         if (error) return { error: 'Could not create product' }
 
+        // Note: if the stock movement insert fails, the product already exists with its
+        // stock value set. This mirrors the pattern in the createProduct form action
+        // and is accepted as known tech debt — a proper fix requires a DB transaction.
         if (stock > 0) {
           const { error: movementError } = await supabase
             .from('stock_movements')
