@@ -28,8 +28,9 @@ vi.mock('openai', () => {
 
 // Mock env
 vi.mock('$env/static/private', () => ({
-  OLLAMA_BASE_URL: 'http://localhost:11434/v1',
-  OLLAMA_MODEL: 'qwen2.5-coder:latest',
+  AI_BASE_URL: 'https://api.groq.com/openai/v1/',
+  AI_MODEL: 'llama-3.3-70b-versatile',
+  AI_API_KEY: 'dummy-key',
 }))
 
 function createRequestEvent(body: object, localsOverride?: object) {
