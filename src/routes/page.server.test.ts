@@ -246,6 +246,16 @@ describe('actions', () => {
         total: '200',
       })
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSupabase = locals.supabase as any
+      mockSupabase._mockData.products.push({
+        id: 'prod-1',
+        stock: 10,
+        name: 'Test Product',
+        price: 100,
+        store_id: 'store-1',
+      })
+
       const event = createMockRequestEvent(formData, locals)
       const result = (await actions.processSale(
         event as unknown as Parameters<Actions['processSale']>[0],
@@ -302,6 +312,9 @@ describe('actions', () => {
         if (table === 'stock_movements') {
           return {
             insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+            delete: vi.fn(() => ({
+              eq: vi.fn(() => Promise.resolve({ error: null })),
+            })),
           }
         }
         if (table === 'products') {
@@ -334,6 +347,11 @@ describe('actions', () => {
           })),
         }
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(locals.supabase as any).rpc = vi.fn(async () => ({
+        data: { success: true, stock: 15 },
+        error: null,
+      }))
 
       const formData = createMockFormData({
         productId: 'prod-1',
@@ -488,6 +506,9 @@ describe('actions', () => {
         if (table === 'stock_movements') {
           return {
             insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+            delete: vi.fn(() => ({
+              eq: vi.fn(() => Promise.resolve({ error: null })),
+            })),
           }
         }
         if (table === 'products') {
@@ -520,6 +541,11 @@ describe('actions', () => {
           })),
         }
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(locals.supabase as any).rpc = vi.fn(async () => ({
+        data: { success: true, stock: 15 },
+        error: null,
+      }))
 
       const formData = createMockFormData({
         productId: 'prod-1',

@@ -1,3 +1,5 @@
+import type { ProductUnit } from './constants'
+
 export interface Store {
   id: string
   name: string
@@ -10,8 +12,6 @@ export interface UserStoreMembership {
   storeId: string
   createdAt: string
 }
-
-import type { ProductUnit } from './constants'
 
 export interface Product {
   id: string

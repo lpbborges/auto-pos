@@ -14,7 +14,6 @@
   interface Props {
     open: boolean
     total: number
-    itemCount: number
     items: CartItem[]
     onclose: () => void
   }
