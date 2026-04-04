@@ -8,7 +8,7 @@
 
   let {
     class: className,
-    value = $bindable(''),
+    value = $bindable<string | number>(''),
     ...restProps
   }: Props = $props()
 </script>

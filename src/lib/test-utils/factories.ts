@@ -191,6 +191,33 @@ export function createMockSupabaseClient(): MockSupabaseClient {
 
   const mockClient = {
     from: vi.fn((table: string) => createQueryBuilder(table)),
+    rpc: vi.fn(async (fnName: string, params: Record<string, any>) => {
+      if (fnName === 'adjust_product_stock') {
+        const product = mockData.products?.find(
+          (p) => p.id === params.p_product_id,
+        )
+        if (!product) {
+          return {
+            data: { success: false, error: 'Product not found' },
+            error: null,
+          }
+        }
+        const newStock = Number(product.stock) + Number(params.p_delta)
+        if (newStock < 0) {
+          return {
+            data: { success: false, error: 'Insufficient stock' },
+            error: null,
+          }
+        }
+        product.stock = newStock
+        product.updated_at = params.p_updated_at
+        return { data: { success: true, stock: newStock }, error: null }
+      }
+      return {
+        data: null,
+        error: { message: `Unknown RPC function: ${fnName}` },
+      }
+    }),
     auth: {
       getSession: vi.fn(() =>
         Promise.resolve({

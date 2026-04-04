@@ -297,13 +297,14 @@ export const actions: Actions = {
       return { success: false, error: movementError.message }
     }
 
-    const { error: stockError } = await locals.supabase
-      .from('products')
-      .update({
-        stock: product.stock + quantity,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', productId)
+    const { data: adjustResult, error: stockError } = await locals.supabase.rpc(
+      'adjust_product_stock',
+      {
+        p_product_id: productId,
+        p_delta: quantity,
+        p_updated_at: new Date().toISOString(),
+      },
+    )
 
     if (stockError) {
       console.error('Error updating stock:', stockError)
@@ -312,6 +313,17 @@ export const actions: Actions = {
         .delete()
         .eq('id', movementId)
       return { success: false, error: stockError.message }
+    }
+
+    if (!adjustResult?.success) {
+      await locals.supabase
+        .from('stock_movements')
+        .delete()
+        .eq('id', movementId)
+      return {
+        success: false,
+        error: adjustResult?.error || 'Failed to update stock',
+      }
     }
 
     return { success: true }
@@ -370,13 +382,14 @@ export const actions: Actions = {
       return { success: false, error: movementError.message }
     }
 
-    const { error: stockError } = await locals.supabase
-      .from('products')
-      .update({
-        stock: product.stock - quantity,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', productId)
+    const { data: adjustResult, error: stockError } = await locals.supabase.rpc(
+      'adjust_product_stock',
+      {
+        p_product_id: productId,
+        p_delta: -quantity,
+        p_updated_at: new Date().toISOString(),
+      },
+    )
 
     if (stockError) {
       console.error('Error updating stock:', stockError)
@@ -385,6 +398,17 @@ export const actions: Actions = {
         .delete()
         .eq('id', movementId)
       return { success: false, error: stockError.message }
+    }
+
+    if (!adjustResult?.success) {
+      await locals.supabase
+        .from('stock_movements')
+        .delete()
+        .eq('id', movementId)
+      return {
+        success: false,
+        error: adjustResult?.error || 'Failed to update stock',
+      }
     }
 
     return { success: true }
@@ -517,13 +541,12 @@ export const actions: Actions = {
 
       createdMovementIds.push(movementId)
 
-      const { error: stockError } = await locals.supabase
-        .from('products')
-        .update({
-          stock: typedItem.product.stock - typedItem.quantity,
-          updated_at: new Date().toISOString(),
+      const { data: adjustResult, error: stockError } =
+        await locals.supabase.rpc('adjust_product_stock', {
+          p_product_id: typedItem.product.id,
+          p_delta: -typedItem.quantity,
+          p_updated_at: new Date().toISOString(),
         })
-        .eq('id', typedItem.product.id)
 
       if (stockError) {
         console.error('Error updating stock:', stockError)
@@ -533,6 +556,18 @@ export const actions: Actions = {
         await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
         await locals.supabase.from('sales').delete().eq('id', sale.id)
         return { success: false, error: stockError.message }
+      }
+
+      if (!adjustResult?.success) {
+        for (const id of createdMovementIds) {
+          await locals.supabase.from('stock_movements').delete().eq('id', id)
+        }
+        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
+        await locals.supabase.from('sales').delete().eq('id', sale.id)
+        return {
+          success: false,
+          error: adjustResult?.error || 'Failed to update stock',
+        }
       }
     }
 

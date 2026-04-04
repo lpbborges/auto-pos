@@ -96,7 +96,7 @@
         <span class="hidden sm:inline">Carrinho</span>
         {#if $cartItemCount > 0}
           <Badge
-            class="absolute -right-2 -top-2 h-5 min-w-[20px] rounded-full px-1.5 text-xs"
+            class="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1.5 text-xs"
           >
             {$cartItemCount}
           </Badge>
@@ -149,7 +149,7 @@
           <button
             type="button"
             class={cn(
-              'animate-scale-in cursor-pointer overflow-hidden transition-all hover:shadow-md active:scale-[0.98] text-left',
+              'animate-scale-in overflow-hidden transition-all hover:shadow-md active:scale-[0.98] text-left',
               isOutOfStock && 'opacity-50',
               cartQty > 0 && 'ring-2 ring-primary',
             )}
@@ -159,7 +159,7 @@
           >
             <Card class="h-full">
               <CardContent
-                class="flex h-full min-h-[120px] flex-col justify-between p-3"
+                class="flex h-full min-h-30 flex-col justify-between p-3"
               >
                 <div>
                   <h3 class="line-clamp-2 text-sm font-semibold leading-tight">
@@ -263,7 +263,6 @@
   <CheckoutDialog
     bind:open={isCheckoutOpen}
     total={$cartTotal}
-    itemCount={$cartItemCount}
     items={$cart}
     onclose={() => (isCheckoutOpen = false)}
   />

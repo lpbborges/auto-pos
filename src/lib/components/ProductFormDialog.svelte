@@ -14,7 +14,6 @@
     PRODUCT_UNITS,
     UNIT_LABELS,
     UNIT_ALLOWS_FRACTIONS,
-    UNIT_STEP,
   } from '$lib/constants'
   import type { ProductUnit } from '$lib/constants'
 
