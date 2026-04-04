@@ -50,6 +50,8 @@ export const actions: Actions = {
     const price = parseFloat(formData.get('price') as string)
     const unit = (formData.get('unit') as string) || 'und'
     const stock = parseFloat(formData.get('stock') as string) || 0
+    const unitCostRaw = formData.get('unitCost') as string | null
+    const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
     if (!name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
@@ -87,16 +89,25 @@ export const actions: Actions = {
     }
 
     if (stock > 0) {
-      await locals.supabase.from('stock_movements').insert([
-        {
-          id: generateUUIDv7(),
-          product_id: data.id,
-          store_id: membership.store_id,
-          type: 'in',
-          quantity: stock,
-          reason: 'Estoque inicial',
-        },
-      ])
+      const { error: movementError } = await locals.supabase
+        .from('stock_movements')
+        .insert([
+          {
+            id: generateUUIDv7(),
+            product_id: data.id,
+            store_id: membership.store_id,
+            type: 'in',
+            quantity: stock,
+            unit_cost: isNaN(unitCost) || unitCost < 0 ? 0 : unitCost,
+            reason: 'Estoque inicial',
+          },
+        ])
+
+      if (movementError) {
+        console.error('Error creating stock movement:', movementError)
+        await locals.supabase.from('products').delete().eq('id', data.id)
+        return { success: false, error: movementError.message }
+      }
     }
 
     return { success: true, product: data }
@@ -111,6 +122,8 @@ export const actions: Actions = {
     const stock = parseFloat(formData.get('stock') as string) || 0
     const previousStock =
       parseFloat(formData.get('previousStock') as string) || 0
+    const unitCostRaw = formData.get('unitCost') as string | null
+    const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
     if (!id || !name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
@@ -144,21 +157,57 @@ export const actions: Actions = {
       if (membership) {
         const stockDelta = stock - previousStock
         if (stockDelta !== 0) {
-          await locals.supabase.from('stock_movements').insert([
-            {
-              id: generateUUIDv7(),
-              product_id: id,
-              store_id: membership.store_id,
-              type: stockDelta > 0 ? 'in' : 'out',
-              quantity: Math.abs(stockDelta),
-              reason: 'Ajuste manual',
-            },
-          ])
+          const { error: movementError } = await locals.supabase
+            .from('stock_movements')
+            .insert([
+              {
+                id: generateUUIDv7(),
+                product_id: id,
+                store_id: membership.store_id,
+                type: stockDelta > 0 ? 'in' : 'out',
+                quantity: Math.abs(stockDelta),
+                unit_cost:
+                  stockDelta > 0
+                    ? isNaN(unitCost) || unitCost < 0
+                      ? 0
+                      : unitCost
+                    : null,
+                reason: 'Ajuste manual',
+              },
+            ])
 
-          await locals.supabase
+          if (movementError) {
+            console.error('Error creating stock movement:', movementError)
+            await locals.supabase
+              .from('products')
+              .update({
+                name: data.name,
+                price: data.price,
+                unit: data.unit,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', id)
+            return { success: false, error: movementError.message }
+          }
+
+          const { error: stockError } = await locals.supabase
             .from('products')
             .update({ stock, updated_at: new Date().toISOString() })
             .eq('id', id)
+
+          if (stockError) {
+            console.error('Error updating stock:', stockError)
+            await locals.supabase
+              .from('products')
+              .update({
+                name: data.name,
+                price: data.price,
+                unit: data.unit,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', id)
+            return { success: false, error: stockError.message }
+          }
         }
       }
     }
@@ -219,10 +268,22 @@ export const actions: Actions = {
       return { success: false, error: 'User is not a member of any store' }
     }
 
+    const { data: product } = await locals.supabase
+      .from('products')
+      .select('stock')
+      .eq('id', productId)
+      .single()
+
+    if (!product) {
+      return { success: false, error: 'Produto não encontrado' }
+    }
+
+    const movementId = generateUUIDv7()
+
     const { error: movementError } = await locals.supabase
       .from('stock_movements')
       .insert({
-        id: generateUUIDv7(),
+        id: movementId,
         product_id: productId,
         store_id: membership.store_id,
         type: 'in',
@@ -236,25 +297,21 @@ export const actions: Actions = {
       return { success: false, error: movementError.message }
     }
 
-    const { data: product } = await locals.supabase
+    const { error: stockError } = await locals.supabase
       .from('products')
-      .select('stock')
+      .update({
+        stock: product.stock + quantity,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', productId)
-      .single()
 
-    if (product) {
-      const { error: stockError } = await locals.supabase
-        .from('products')
-        .update({
-          stock: product.stock + quantity,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', productId)
-
-      if (stockError) {
-        console.error('Error updating stock:', stockError)
-        return { success: false, error: stockError.message }
-      }
+    if (stockError) {
+      console.error('Error updating stock:', stockError)
+      await locals.supabase
+        .from('stock_movements')
+        .delete()
+        .eq('id', movementId)
+      return { success: false, error: stockError.message }
     }
 
     return { success: true }
@@ -295,10 +352,12 @@ export const actions: Actions = {
       return { success: false, error: 'Estoque insuficiente' }
     }
 
+    const movementId = generateUUIDv7()
+
     const { error: movementError } = await locals.supabase
       .from('stock_movements')
       .insert({
-        id: generateUUIDv7(),
+        id: movementId,
         product_id: productId,
         store_id: membership.store_id,
         type: 'out',
@@ -321,6 +380,10 @@ export const actions: Actions = {
 
     if (stockError) {
       console.error('Error updating stock:', stockError)
+      await locals.supabase
+        .from('stock_movements')
+        .delete()
+        .eq('id', movementId)
       return { success: false, error: stockError.message }
     }
 
@@ -416,8 +479,11 @@ export const actions: Actions = {
 
     if (itemsError) {
       console.error('Error creating sale items:', itemsError)
+      await locals.supabase.from('sales').delete().eq('id', sale.id)
       return { success: false, error: itemsError.message }
     }
+
+    const createdMovementIds: string[] = []
 
     for (const item of items) {
       const typedItem = item as {
@@ -425,10 +491,12 @@ export const actions: Actions = {
         quantity: number
       }
 
+      const movementId = generateUUIDv7()
+
       const { error: movementError } = await locals.supabase
         .from('stock_movements')
         .insert({
-          id: generateUUIDv7(),
+          id: movementId,
           product_id: typedItem.product.id,
           store_id: membership.store_id,
           type: 'out',
@@ -439,7 +507,15 @@ export const actions: Actions = {
 
       if (movementError) {
         console.error('Error creating stock movement:', movementError)
+        for (const id of createdMovementIds) {
+          await locals.supabase.from('stock_movements').delete().eq('id', id)
+        }
+        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
+        await locals.supabase.from('sales').delete().eq('id', sale.id)
+        return { success: false, error: movementError.message }
       }
+
+      createdMovementIds.push(movementId)
 
       const { error: stockError } = await locals.supabase
         .from('products')
@@ -451,6 +527,11 @@ export const actions: Actions = {
 
       if (stockError) {
         console.error('Error updating stock:', stockError)
+        for (const id of createdMovementIds) {
+          await locals.supabase.from('stock_movements').delete().eq('id', id)
+        }
+        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
+        await locals.supabase.from('sales').delete().eq('id', sale.id)
         return { success: false, error: stockError.message }
       }
     }
