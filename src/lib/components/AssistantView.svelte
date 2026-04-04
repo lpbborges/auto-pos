@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte'
   import { Send, Bot } from 'lucide-svelte'
   import { cn } from '$lib/utils'
 
@@ -9,6 +10,7 @@
   let isLoading = $state(false)
   let error = $state<string | null>(null)
   let messagesEnd = $state<HTMLDivElement | null>(null)
+  let inputEl = $state<HTMLTextAreaElement | null>(null)
 
   function scrollToBottom() {
     messagesEnd?.scrollIntoView({ behavior: 'smooth' })
@@ -63,6 +65,8 @@
     } finally {
       isLoading = false
       scrollToBottom()
+      await tick()
+      inputEl?.focus()
     }
   }
 
@@ -139,6 +143,7 @@
   <div class="border-t border-border bg-card px-4 py-3 pb-20">
     <div class="mx-auto flex max-w-lg gap-2">
       <textarea
+        bind:this={inputEl}
         bind:value={input}
         onkeydown={handleKeydown}
         placeholder="Pergunte algo..."
