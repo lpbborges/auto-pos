@@ -119,11 +119,6 @@ export const actions: Actions = {
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
     const unit = (formData.get('unit') as string) || 'und'
-    const stock = parseFloat(formData.get('stock') as string) || 0
-    const previousStock =
-      parseFloat(formData.get('previousStock') as string) || 0
-    const unitCostRaw = formData.get('unitCost') as string | null
-    const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
     if (!id || !name || isNaN(price)) {
       return { success: false, error: 'Invalid product data' }
@@ -146,66 +141,6 @@ export const actions: Actions = {
 
     if (!membership) {
       return { success: false, error: 'User is not a member of any store' }
-    }
-
-    const stockDelta = stock - previousStock
-
-    // Update stock first if it changed, so we can rollback atomically
-    if (stockDelta !== 0) {
-      const movementId = generateUUIDv7()
-
-      // Create stock movement first
-      const { error: movementError } = await locals.supabase
-        .from('stock_movements')
-        .insert([
-          {
-            id: movementId,
-            product_id: id,
-            store_id: membership.store_id,
-            type: stockDelta > 0 ? 'in' : 'out',
-            quantity: Math.abs(stockDelta),
-            unit_cost:
-              stockDelta > 0
-                ? isNaN(unitCost) || unitCost < 0
-                  ? 0
-                  : unitCost
-                : null,
-            reason: 'Ajuste manual',
-          },
-        ])
-
-      if (movementError) {
-        console.error('Error creating stock movement:', movementError)
-        return { success: false, error: movementError.message }
-      }
-
-      // Update stock via RPC
-      const { data: adjustResult, error: stockError } =
-        await locals.supabase.rpc('adjust_product_stock', {
-          p_product_id: id,
-          p_delta: stockDelta,
-          p_updated_at: new Date().toISOString(),
-        })
-
-      if (stockError) {
-        console.error('Error updating stock:', stockError)
-        await locals.supabase
-          .from('stock_movements')
-          .delete()
-          .eq('id', movementId)
-        return { success: false, error: stockError.message }
-      }
-
-      if (!adjustResult?.success) {
-        await locals.supabase
-          .from('stock_movements')
-          .delete()
-          .eq('id', movementId)
-        return {
-          success: false,
-          error: adjustResult?.error || 'Failed to update stock',
-        }
-      }
     }
 
     // Now update product details (name, price, unit)
