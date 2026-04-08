@@ -2,6 +2,7 @@
   import { tick } from 'svelte'
   import { Send, Bot } from 'lucide-svelte'
   import { cn } from '$lib/utils'
+  import { marked } from 'marked'
 
   type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -117,6 +118,10 @@
           >
             {#if msg.role === 'assistant' && msg.content === '' && isLoading}
               <span class="text-muted-foreground">Pensando...</span>
+            {:else if msg.role === 'assistant'}
+              <div class="prose prose-sm max-w-none dark:prose-invert">
+                {@html marked.parse(msg.content) as string}
+              </div>
             {:else}
               <p class="whitespace-pre-wrap">{msg.content}</p>
             {/if}
