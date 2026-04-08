@@ -97,7 +97,6 @@ describe('actions', () => {
       const formData = createMockFormData({
         name: 'Test Product',
         price: '100',
-        stock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -116,7 +115,6 @@ describe('actions', () => {
     it('should return error for missing name', async () => {
       const formData = createMockFormData({
         price: '100',
-        stock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -134,7 +132,6 @@ describe('actions', () => {
       const formData = createMockFormData({
         name: 'Test',
         price: 'invalid',
-        stock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -153,7 +150,6 @@ describe('actions', () => {
       const formData = createMockFormData({
         name: 'Test',
         price: '100',
-        stock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -184,8 +180,6 @@ describe('actions', () => {
         id: 'product-1',
         name: 'Updated Name',
         price: '150',
-        stock: '20',
-        previousStock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
@@ -200,7 +194,6 @@ describe('actions', () => {
       const formData = createMockFormData({
         name: 'Test',
         price: '100',
-        stock: '10',
       })
 
       const event = createMockRequestEvent(formData, locals)
