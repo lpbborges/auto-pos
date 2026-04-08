@@ -1,8 +1,16 @@
 <script lang="ts">
   import { formatCurrency, formatDate } from '$lib/utils'
-  import { ArrowLeft, Receipt, Package, TrendingUp } from 'lucide-svelte'
+  import {
+    ArrowLeft,
+    Receipt,
+    Package,
+    TrendingUp,
+    RotateCcw,
+    AlertTriangle,
+  } from 'lucide-svelte'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
+  import { enhance } from '$app/forms'
   import { PAYMENT_METHOD_LABELS, type PaymentMethod } from '$lib/types'
   import type { PageData } from './$types'
 
@@ -11,6 +19,11 @@
   }
 
   let { data }: Props = $props()
+
+  let undoingSaleId = $state<string | null>(null)
+  let undoDialogOpen = $state(false)
+  let saleToUndo = $state<string | null>(null)
+  let undoing = $state(false)
 
   const filters = [
     { value: 'all', label: 'Tudo' },
@@ -31,6 +44,22 @@
 
   function getPaymentLabel(method: string): string {
     return PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method
+  }
+
+  function openUndoDialog(saleId: string) {
+    saleToUndo = saleId
+    undoDialogOpen = true
+  }
+
+  function closeUndoDialog() {
+    undoDialogOpen = false
+    saleToUndo = null
+  }
+
+  async function handleUndo() {
+    if (!saleToUndo) return
+    undoing = true
+    undoingSaleId = saleToUndo
   }
 </script>
 
@@ -181,10 +210,82 @@
               <span class="text-xs text-muted-foreground font-mono">
                 #{sale.id.slice(0, 8)}
               </span>
+              <button
+                type="button"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground disabled:opacity-50"
+                title="Cancelar venda"
+                disabled={undoing && undoingSaleId === sale.id}
+                onclick={() => openUndoDialog(sale.id)}
+              >
+                <RotateCcw class="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
       {/each}
     {/if}
   </div>
+
+  <!-- Undo Confirmation Dialog -->
+  {#if undoDialogOpen}
+    <div class="fixed inset-0 z-50 flex items-center justify-center">
+      <!-- Backdrop -->
+      <button
+        type="button"
+        class="fixed inset-0 bg-black/80"
+        onclick={closeUndoDialog}
+        aria-label="Close dialog"
+      ></button>
+
+      <!-- Content -->
+      <div
+        class="relative z-[100] grid w-full max-w-sm gap-4 border bg-background p-6 shadow-lg sm:rounded-lg"
+      >
+        <div class="flex flex-col items-center text-center">
+          <div
+            class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10"
+          >
+            <AlertTriangle class="h-6 w-6 text-destructive" />
+          </div>
+          <h3 class="text-lg font-semibold">Cancelar Venda?</h3>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Esta ação irá restaurar o estoque dos produtos vendidos. Esta ação
+            não pode ser desfeita.
+          </p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <form
+            method="POST"
+            action="?/undoSale"
+            use:enhance={() => {
+              handleUndo()
+              return async ({ update }) => {
+                await update()
+                undoing = false
+                undoingSaleId = null
+                closeUndoDialog()
+              }
+            }}
+          >
+            <input type="hidden" name="saleId" value={saleToUndo ?? ''} />
+            <button
+              type="submit"
+              class="inline-flex h-10 w-full items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+              disabled={undoing}
+            >
+              {undoing ? 'Cancelando...' : 'Sim, cancelar venda'}
+            </button>
+          </form>
+          <button
+            type="button"
+            class="inline-flex h-10 w-full items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            onclick={closeUndoDialog}
+            disabled={undoing}
+          >
+            Não, manter venda
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
