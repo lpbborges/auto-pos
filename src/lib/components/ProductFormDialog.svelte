@@ -10,11 +10,7 @@
   import { enhance } from '$app/forms'
   import { products } from '$lib/stores'
   import { toast } from 'svelte-sonner'
-  import {
-    PRODUCT_UNITS,
-    UNIT_LABELS,
-    UNIT_ALLOWS_FRACTIONS,
-  } from '$lib/constants'
+  import { PRODUCT_UNITS, UNIT_LABELS } from '$lib/constants'
   import type { ProductUnit } from '$lib/constants'
 
   interface Props {
@@ -28,8 +24,6 @@
   let name = $state('')
   let price = $state(0)
   let unit = $state<ProductUnit>('und')
-  let stock = $state(0)
-  let unitCost = $state(0)
   let isSubmitting = $state(false)
 
   $effect(() => {
@@ -37,18 +31,12 @@
       name = product?.name || ''
       price = product?.price || 0
       unit = product?.unit || 'und'
-      stock = product?.stock || 0
-      unitCost = 0
     }
   })
 
   function handleClose() {
     open = false
     onclose()
-  }
-
-  function getStockStep(): string {
-    return UNIT_ALLOWS_FRACTIONS[unit] ? '0.001' : '1'
   }
 </script>
 
@@ -144,38 +132,6 @@
         bind:value={price}
       />
     </div>
-
-    <div class="space-y-2">
-      <label for="stock" class="text-sm font-medium">Quantidade ({unit})</label>
-      <Input
-        id="stock"
-        name="stock"
-        type="number"
-        step={getStockStep()}
-        min="0"
-        placeholder="0"
-        class="touch-target"
-        bind:value={stock}
-      />
-    </div>
-
-    {#if stock > 0 && !product}
-      <div class="space-y-2">
-        <label for="unitCost" class="text-sm font-medium"
-          >Custo Unitário (R$)</label
-        >
-        <Input
-          id="unitCost"
-          name="unitCost"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-          class="touch-target"
-          bind:value={unitCost}
-        />
-      </div>
-    {/if}
 
     <div class="flex gap-3 pt-2">
       <Button
