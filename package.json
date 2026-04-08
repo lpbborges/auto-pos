@@ -28,6 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-svelte": "^0.575.0",
+    "marked": "^18.0.0",
     "mode-watcher": "^1.1.0",
     "openai": "^6.33.0",
     "svelte-sonner": "^1.0.7",
