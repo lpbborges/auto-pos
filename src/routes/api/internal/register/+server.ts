@@ -30,9 +30,9 @@ export async function POST({ request }: RequestEvent) {
     const expected = PRIVATE_INTERNAL_API_KEY
     let authorized = false
     try {
-      authorized =
-        provided.length === expected.length &&
-        timingSafeEqual(Buffer.from(provided), Buffer.from(expected))
+      const a = Buffer.from(provided)
+      const b = Buffer.from(expected)
+      authorized = a.byteLength === b.byteLength && timingSafeEqual(a, b)
     } catch {
       authorized = false
     }
