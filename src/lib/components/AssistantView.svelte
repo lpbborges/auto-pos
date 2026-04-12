@@ -1,12 +1,17 @@
 <script lang="ts">
   import { tick } from 'svelte'
+  import { SvelteMap } from 'svelte/reactivity'
   import { Send, Bot } from 'lucide-svelte'
   import { cn } from '$lib/utils'
   import { marked } from 'marked'
   import DOMPurify from 'dompurify'
 
+  const renderCache = new SvelteMap<string, string>()
   function renderMarkdown(content: string): string {
-    return DOMPurify.sanitize(marked.parse(content) as string)
+    if (renderCache.has(content)) return renderCache.get(content)!
+    const html = DOMPurify.sanitize(marked.parse(content) as string)
+    renderCache.set(content, html)
+    return html
   }
 
   type Message = { role: 'user' | 'assistant'; content: string }
@@ -59,9 +64,11 @@
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        messages = messages.map((m, i) =>
-          i === messages.length - 1 ? { ...m, content: m.content + chunk } : m,
-        )
+        const last = messages[messages.length - 1]
+        if (last) {
+          last.content += chunk
+          messages = [...messages.slice(0, -1), last]
+        }
         scrollToBottom()
       }
     } catch (err) {
