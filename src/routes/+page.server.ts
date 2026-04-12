@@ -50,7 +50,8 @@ export const actions: Actions = {
       !name ||
       name.trim().length === 0 ||
       name.length > 255 ||
-      isNaN(price)
+      isNaN(price) ||
+      price <= 0
     ) {
       return { success: false, error: 'Invalid product data' }
     }
@@ -116,7 +117,8 @@ export const actions: Actions = {
       !name ||
       name.trim().length === 0 ||
       name.length > 255 ||
-      isNaN(price)
+      isNaN(price) ||
+      price <= 0
     ) {
       return { success: false, error: 'Invalid product data' }
     }
