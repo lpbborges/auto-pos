@@ -209,6 +209,7 @@ export const actions: Actions = {
       .from('products')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('store_id', membership.store_id)
 
     if (error) {
       console.error('Error deleting product:', error)
