@@ -143,11 +143,23 @@ export const actions: Actions = {
       return { success: false, error: 'User is not a member of any store' }
     }
 
+    // Verify product belongs to this store before updating
+    const { data: existingProduct } = await locals.supabase
+      .from('products')
+      .select('store_id')
+      .eq('id', id)
+      .single()
+
+    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+      return { success: false, error: 'Product not found' }
+    }
+
     // Now update product details (name, price, unit)
     const { data, error } = await locals.supabase
       .from('products')
       .update({ name, price, unit, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('store_id', membership.store_id)
       .select()
       .single()
 
@@ -165,6 +177,32 @@ export const actions: Actions = {
 
     if (!id) {
       return { success: false, error: 'Product ID is required' }
+    }
+
+    const user = locals.user
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: membership } = await locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return { success: false, error: 'User is not a member of any store' }
+    }
+
+    // Verify product belongs to this store before deleting
+    const { data: existingProduct } = await locals.supabase
+      .from('products')
+      .select('store_id')
+      .eq('id', id)
+      .single()
+
+    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+      return { success: false, error: 'Product not found' }
     }
 
     const { error } = await locals.supabase

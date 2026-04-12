@@ -210,6 +210,16 @@ describe('actions', () => {
 
   describe('deleteProduct', () => {
     it('should soft delete product', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(locals.supabase as any)._mockData.products.push({
+        id: 'product-1',
+        name: 'Test Product',
+        price: 100,
+        stock: 10,
+        unit: 'und',
+        store_id: 'store-1',
+      })
+
       const formData = createMockFormData({ id: 'product-1' })
 
       const event = createMockRequestEvent(formData, locals)
