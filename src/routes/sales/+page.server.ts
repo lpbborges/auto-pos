@@ -27,6 +27,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     .eq('store_id', locals.storeId)
     .is('cancelled_at', null)
     .order('created_at', { ascending: false })
+    .limit(200)
 
   const now = new Date()
 
