@@ -18,7 +18,8 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
+    "**/*": "prettier --write --ignore-unknown",
+    "**/*.{js,mjs,cjs,ts,mts,cts,svelte,json,jsonc}": "eslint"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -27,6 +28,7 @@
     "bits-ui": "^2.16.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.3",
     "lucide-svelte": "^0.575.0",
     "marked": "^18.0.0",
     "mode-watcher": "^1.1.0",
@@ -48,6 +50,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.3.1",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^25.3.0",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.27",

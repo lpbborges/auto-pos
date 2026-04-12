@@ -3,6 +3,11 @@
   import { Send, Bot } from 'lucide-svelte'
   import { cn } from '$lib/utils'
   import { marked } from 'marked'
+  import DOMPurify from 'dompurify'
+
+  function renderMarkdown(content: string): string {
+    return DOMPurify.sanitize(marked.parse(content) as string)
+  }
 
   type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -120,7 +125,8 @@
               <span class="text-muted-foreground">Pensando...</span>
             {:else if msg.role === 'assistant'}
               <div class="prose prose-sm max-w-none dark:prose-invert">
-                {@html marked.parse(msg.content) as string}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
+                {@html renderMarkdown(msg.content)}
               </div>
             {:else}
               <p class="whitespace-pre-wrap">{msg.content}</p>
