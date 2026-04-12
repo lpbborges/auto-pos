@@ -13,6 +13,7 @@ declare global {
       }>
       session: Session | null
       user: User | null
+      storeId: string | null
     }
     // interface PageData {}
     // interface PageState {}

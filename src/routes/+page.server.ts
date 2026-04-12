@@ -17,23 +17,15 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
 
   let store = null
-  if (user) {
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
+  if (user && locals.storeId) {
+    const { data: storeData } = await locals.supabase
+      .from('stores')
+      .select('id, name')
+      .eq('id', locals.storeId)
       .single()
 
-    if (membership) {
-      const { data: storeData } = await locals.supabase
-        .from('stores')
-        .select('id, name')
-        .eq('id', membership.store_id)
-        .single()
-
-      if (storeData) {
-        store = { id: storeData.id, name: storeData.name }
-      }
+    if (storeData) {
+      store = { id: storeData.id, name: storeData.name }
     }
   }
 
@@ -72,19 +64,13 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
     const { data, error } = await locals.supabase
       .from('products')
-      .insert([{ name, price, stock, unit, store_id: membership.store_id }])
+      .insert([{ name, price, stock, unit, store_id: locals.storeId }])
       .select()
       .single()
 
@@ -100,7 +86,7 @@ export const actions: Actions = {
           {
             id: generateUUIDv7(),
             product_id: data.id,
-            store_id: membership.store_id,
+            store_id: locals.storeId,
             type: 'in',
             quantity: stock,
             unit_cost: isNaN(unitCost) || unitCost < 0 ? 0 : unitCost,
@@ -144,13 +130,7 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
@@ -161,7 +141,7 @@ export const actions: Actions = {
       .eq('id', id)
       .single()
 
-    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+    if (!existingProduct || existingProduct.store_id !== locals.storeId) {
       return { success: false, error: 'Product not found' }
     }
 
@@ -170,7 +150,7 @@ export const actions: Actions = {
       .from('products')
       .update({ name, price, unit, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
       .select()
       .single()
 
@@ -195,13 +175,7 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
@@ -212,7 +186,7 @@ export const actions: Actions = {
       .eq('id', id)
       .single()
 
-    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+    if (!existingProduct || existingProduct.store_id !== locals.storeId) {
       return { success: false, error: 'Product not found' }
     }
 
@@ -220,7 +194,7 @@ export const actions: Actions = {
       .from('products')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
 
     if (error) {
       console.error('Error deleting product:', error)
@@ -256,13 +230,7 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
@@ -270,7 +238,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
       .single()
 
     if (!product) {
@@ -284,7 +252,7 @@ export const actions: Actions = {
       .insert({
         id: movementId,
         product_id: productId,
-        store_id: membership.store_id,
+        store_id: locals.storeId,
         type: 'in',
         quantity,
         unit_cost: unitCost,
@@ -347,13 +315,7 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
@@ -361,7 +323,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
       .single()
 
     if (!product || product.stock < quantity) {
@@ -375,7 +337,7 @@ export const actions: Actions = {
       .insert({
         id: movementId,
         product_id: productId,
-        store_id: membership.store_id,
+        store_id: locals.storeId,
         type: 'out',
         quantity,
         reason,
@@ -451,13 +413,7 @@ export const actions: Actions = {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return { success: false, error: 'User is not a member of any store' }
     }
 
@@ -468,7 +424,7 @@ export const actions: Actions = {
       .from('products')
       .select('id, stock')
       .in('id', productIds)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
 
     if (productsError) {
       console.error('Error checking products:', productsError)
@@ -499,33 +455,25 @@ export const actions: Actions = {
       }
     }
 
-    const { data: costData } = await locals.supabase
-      .from('stock_movements')
-      .select('product_id, quantity, unit_cost')
-      .in('product_id', productIds)
-      .eq('type', 'in')
-      .eq('store_id', membership.store_id)
+    const { data: costData } = await locals.supabase.rpc(
+      'get_avg_product_costs',
+      {
+        p_product_ids: productIds,
+        p_store_id: locals.storeId,
+      },
+    )
 
     const avgCostMap: Record<string, number> = {}
     if (costData) {
-      const grouped: Record<string, { totalCost: number; totalQty: number }> =
-        {}
       for (const row of costData) {
-        if (!grouped[row.product_id]) {
-          grouped[row.product_id] = { totalCost: 0, totalQty: 0 }
-        }
-        grouped[row.product_id].totalCost += row.unit_cost * row.quantity
-        grouped[row.product_id].totalQty += row.quantity
-      }
-      for (const [pid, data] of Object.entries(grouped)) {
-        avgCostMap[pid] = data.totalQty > 0 ? data.totalCost / data.totalQty : 0
+        avgCostMap[row.product_id] = row.avg_cost ?? 0
       }
     }
 
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
       .insert([
-        { total, store_id: membership.store_id, payment_method: paymentMethod },
+        { total, store_id: locals.storeId, payment_method: paymentMethod },
       ])
       .select()
       .single()
@@ -541,7 +489,7 @@ export const actions: Actions = {
       quantity: item.quantity,
       price_at_sale: item.product.price,
       cost_at_sale: avgCostMap[item.product.id] ?? 0,
-      store_id: membership.store_id,
+      store_id: locals.storeId,
     }))
 
     const { error: itemsError } = await locals.supabase
@@ -564,7 +512,7 @@ export const actions: Actions = {
         .insert({
           id: movementId,
           product_id: item.product.id,
-          store_id: membership.store_id,
+          store_id: locals.storeId,
           type: 'out',
           quantity: item.quantity,
           reason: 'Venda',

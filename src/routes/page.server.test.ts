@@ -477,23 +477,7 @@ describe('actions', () => {
     })
 
     it('should return error when user has no store membership', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      locals.supabase.from = vi.fn((table: string): any => {
-        if (table === 'store_memberships') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({ data: null, error: null }),
-                ),
-              })),
-            })),
-          }
-        }
-        return {
-          insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-        }
-      })
+      locals.storeId = null
 
       const formData = createMockFormData({
         productId: 'prod-1',
@@ -684,23 +668,7 @@ describe('actions', () => {
     })
 
     it('should return error when user has no store membership', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      locals.supabase.from = vi.fn((table: string): any => {
-        if (table === 'store_memberships') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({ data: null, error: null }),
-                ),
-              })),
-            })),
-          }
-        }
-        return {
-          insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-        }
-      })
+      locals.storeId = null
 
       const formData = createMockFormData({
         productId: 'prod-1',

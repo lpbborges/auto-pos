@@ -47,6 +47,16 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Set session and user on locals
   event.locals.session = session
   event.locals.user = user
+  event.locals.storeId = null
+
+  if (user) {
+    const { data: membership } = await event.locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+    event.locals.storeId = membership?.store_id ?? null
+  }
 
   // Check if route requires authentication
   const isAuthRoute = event.url.pathname === '/login'

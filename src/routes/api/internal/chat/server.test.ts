@@ -5,18 +5,26 @@ import { createMockLocals, createMockCookies } from '$lib/test-utils/factories'
 
 // Hoist mockCreate so it is available inside the vi.mock factory (which is hoisted by vitest)
 const { mockCreate } = vi.hoisted(() => ({
-  mockCreate: vi.fn().mockResolvedValue({
+  mockCreate: vi.fn(),
+}))
+
+function makeStreamResponse(content: string) {
+  async function* gen() {
+    yield { choices: [{ delta: { content } }] }
+  }
+  return Promise.resolve(gen())
+}
+
+function makeTextResponse(content: string) {
+  return Promise.resolve({
     choices: [
       {
         finish_reason: 'stop',
-        message: {
-          content: 'Here is how you add a product...',
-          tool_calls: null,
-        },
+        message: { content, tool_calls: null },
       },
     ],
-  }),
-}))
+  })
+}
 
 // Mock the OpenAI SDK
 vi.mock('openai', () => {
@@ -49,17 +57,11 @@ function createRequestEvent(body: object, localsOverride?: object) {
 describe('POST /api/internal/chat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreate.mockResolvedValue({
-      choices: [
-        {
-          finish_reason: 'stop',
-          message: {
-            content: 'Here is how you add a product...',
-            tool_calls: null,
-          },
-        },
-      ],
-    })
+    mockCreate.mockImplementation((params: { stream?: boolean }) =>
+      params?.stream
+        ? makeStreamResponse('Here is how you add a product...')
+        : makeTextResponse('Here is how you add a product...'),
+    )
   })
 
   it('returns 401 when user is not authenticated', async () => {
