@@ -9,13 +9,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     return { sales: [], filter, totalRevenue: 0, totalProfit: 0 }
   }
 
-  const { data: membership } = await locals.supabase
-    .from('store_memberships')
-    .select('store_id')
-    .eq('user_id', session.user.id)
-    .single()
-
-  if (!membership) {
+  if (!locals.storeId) {
     return { sales: [], filter, totalRevenue: 0, totalProfit: 0 }
   }
 
@@ -23,14 +17,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     .from('sales')
     .select(
       `
-      *,
+      id, total, created_at, payment_method,
       sale_items (
         *,
         product:products (name)
       )
     `,
     )
-    .eq('store_id', membership.store_id)
+    .eq('store_id', locals.storeId)
     .is('cancelled_at', null)
     .order('created_at', { ascending: false })
 
@@ -97,21 +91,15 @@ export const actions: Actions = {
       return fail(401, { error: 'Não autorizado' })
     }
 
-    const { data: membership } = await locals.supabase
-      .from('store_memberships')
-      .select('store_id')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!membership) {
+    if (!locals.storeId) {
       return fail(403, { error: 'Usuário não pertence a uma loja' })
     }
 
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
-      .select('*, sale_items(*)')
+      .select('id, sale_items(id, product_id, quantity)')
       .eq('id', saleId)
-      .eq('store_id', membership.store_id)
+      .eq('store_id', locals.storeId)
       .is('cancelled_at', null)
       .single()
 
@@ -125,34 +113,39 @@ export const actions: Actions = {
       quantity: number
     }[]
 
-    for (const item of saleItems) {
-      const { data: adjustResult, error: stockError } =
-        await locals.supabase.rpc('adjust_product_stock', {
+    const updatedAt = new Date().toISOString()
+    const rpcResults = await Promise.all(
+      saleItems.map((item) =>
+        locals.supabase.rpc('adjust_product_stock', {
           p_product_id: item.product_id,
           p_delta: item.quantity,
-          p_updated_at: new Date().toISOString(),
-        })
+          p_updated_at: updatedAt,
+        }),
+      ),
+    )
 
+    for (const { data: adjustResult, error: stockError } of rpcResults) {
       if (stockError) {
         console.error('Error restoring stock:', stockError)
         return fail(500, { error: 'Erro ao restaurar estoque' })
       }
-
       if (!adjustResult?.success) {
         return fail(500, {
           error: adjustResult?.error || 'Falha ao restaurar estoque',
         })
       }
+    }
 
-      await locals.supabase.from('stock_movements').insert({
+    await locals.supabase.from('stock_movements').insert(
+      saleItems.map((item) => ({
         product_id: item.product_id,
-        store_id: membership.store_id,
+        store_id: locals.storeId,
         type: 'in',
         quantity: item.quantity,
         reason: 'Cancelamento de venda',
         sale_id: sale.id,
-      })
-    }
+      })),
+    )
 
     const { error: updateError } = await locals.supabase
       .from('sales')

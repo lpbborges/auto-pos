@@ -239,6 +239,13 @@ export function createMockSupabaseClient(): MockSupabaseClient {
         product.updated_at = params.p_updated_at
         return { data: { success: true, stock: newStock }, error: null }
       }
+      if (fnName === 'get_avg_product_costs') {
+        const rows = (params.p_product_ids as string[]).map((id: string) => ({
+          product_id: id,
+          avg_cost: 0,
+        }))
+        return { data: rows, error: null }
+      }
       return {
         data: null,
         error: { message: `Unknown RPC function: ${fnName}` },
@@ -285,6 +292,7 @@ export function createMockLocals() {
   return {
     user: { id: 'user-1', email: 'test@example.com' },
     session: mockSession,
+    storeId: 'store-1',
     supabase: createMockSupabaseClient(),
     safeGetSession: vi.fn(() =>
       Promise.resolve({
