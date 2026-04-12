@@ -39,8 +39,13 @@ function createCartStore() {
 
 export const cart = createCartStore()
 
-export const cartTotal = derived(cart, ($cart) =>
-  $cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+export const cartTotal = derived(
+  cart,
+  ($cart) =>
+    Math.round(
+      $cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0) *
+        100,
+    ) / 100,
 )
 
 export const cartItemCount = derived(cart, ($cart) =>
