@@ -54,7 +54,12 @@ export const actions: Actions = {
     const unitCostRaw = formData.get('unitCost') as string | null
     const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
-    if (!name || isNaN(price)) {
+    if (
+      !name ||
+      name.trim().length === 0 ||
+      name.length > 255 ||
+      isNaN(price)
+    ) {
       return { success: false, error: 'Invalid product data' }
     }
 
@@ -120,7 +125,13 @@ export const actions: Actions = {
     const price = parseFloat(formData.get('price') as string)
     const unit = (formData.get('unit') as string) || 'und'
 
-    if (!id || !name || isNaN(price)) {
+    if (
+      !id ||
+      !name ||
+      name.trim().length === 0 ||
+      name.length > 255 ||
+      isNaN(price)
+    ) {
       return { success: false, error: 'Invalid product data' }
     }
 
@@ -226,6 +237,10 @@ export const actions: Actions = {
     const unitCost = parseFloat(formData.get('unitCost') as string)
     const reason = (formData.get('reason') as string) || 'Entrada manual'
 
+    if (reason.length > 500) {
+      return { success: false, error: 'Reason too long' }
+    }
+
     if (
       !productId ||
       isNaN(quantity) ||
@@ -317,6 +332,10 @@ export const actions: Actions = {
     const productId = formData.get('productId') as string
     const quantity = parseFloat(formData.get('quantity') as string)
     const reason = (formData.get('reason') as string) || 'Saída manual'
+
+    if (reason.length > 500) {
+      return { success: false, error: 'Reason too long' }
+    }
 
     if (!productId || isNaN(quantity) || quantity <= 0) {
       return { success: false, error: 'Dados inválidos' }
