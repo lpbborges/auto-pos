@@ -270,6 +270,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
+      .eq('store_id', membership.store_id)
       .single()
 
     if (!product) {
@@ -360,6 +361,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
+      .eq('store_id', membership.store_id)
       .single()
 
     if (!product || product.stock < quantity) {

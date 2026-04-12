@@ -333,12 +333,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 10 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 10 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
             update: vi.fn(() => ({
@@ -527,12 +529,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 20 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 20 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
             update: vi.fn(() => ({
@@ -621,12 +625,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 2 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 2 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
           }
