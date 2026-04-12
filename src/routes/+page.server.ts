@@ -502,61 +502,59 @@ export const actions: Actions = {
       return { success: false, error: itemsError.message }
     }
 
-    const createdMovementIds: string[] = []
+    // Batch insert all stock movements
+    const movementIds = items.map(() => generateUUIDv7())
+    const movements = items.map((item, i) => ({
+      id: movementIds[i],
+      product_id: item.product.id,
+      store_id: locals.storeId,
+      type: 'out' as const,
+      quantity: item.quantity,
+      reason: 'Venda',
+      sale_id: sale.id,
+    }))
 
-    for (const item of items) {
-      const movementId = generateUUIDv7()
+    const { error: movementsError } = await locals.supabase
+      .from('stock_movements')
+      .insert(movements)
 
-      const { error: movementError } = await locals.supabase
-        .from('stock_movements')
-        .insert({
-          id: movementId,
-          product_id: item.product.id,
-          store_id: locals.storeId,
-          type: 'out',
-          quantity: item.quantity,
-          reason: 'Venda',
-          sale_id: sale.id,
-        })
+    if (movementsError) {
+      console.error('Error creating stock movements:', movementsError)
+      await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
+      await locals.supabase.from('sales').delete().eq('id', sale.id)
+      return { success: false, error: movementsError.message }
+    }
 
-      if (movementError) {
-        console.error('Error creating stock movement:', movementError)
-        for (const id of createdMovementIds) {
-          await locals.supabase.from('stock_movements').delete().eq('id', id)
-        }
-        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
-        await locals.supabase.from('sales').delete().eq('id', sale.id)
-        return { success: false, error: movementError.message }
-      }
-
-      createdMovementIds.push(movementId)
-
-      const { data: adjustResult, error: stockError } =
-        await locals.supabase.rpc('adjust_product_stock', {
+    // Adjust all stock levels in parallel
+    const updatedAt = new Date().toISOString()
+    const adjustResults = await Promise.all(
+      items.map((item) =>
+        locals.supabase.rpc('adjust_product_stock', {
           p_product_id: item.product.id,
           p_delta: -item.quantity,
-          p_updated_at: new Date().toISOString(),
-        })
+          p_updated_at: updatedAt,
+        }),
+      ),
+    )
 
-      if (stockError) {
-        console.error('Error updating stock:', stockError)
-        for (const id of createdMovementIds) {
-          await locals.supabase.from('stock_movements').delete().eq('id', id)
-        }
-        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
-        await locals.supabase.from('sales').delete().eq('id', sale.id)
-        return { success: false, error: stockError.message }
-      }
-
-      if (!adjustResult?.success) {
-        for (const id of createdMovementIds) {
-          await locals.supabase.from('stock_movements').delete().eq('id', id)
-        }
+    for (const { data: adjustResult, error: stockError } of adjustResults) {
+      if (stockError || !adjustResult?.success) {
+        console.error(
+          'Error adjusting stock:',
+          stockError ?? adjustResult?.error,
+        )
+        await locals.supabase
+          .from('stock_movements')
+          .delete()
+          .in('id', movementIds)
         await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
         await locals.supabase.from('sales').delete().eq('id', sale.id)
         return {
           success: false,
-          error: adjustResult?.error || 'Failed to update stock',
+          error:
+            stockError?.message ??
+            adjustResult?.error ??
+            'Failed to update stock',
         }
       }
     }
