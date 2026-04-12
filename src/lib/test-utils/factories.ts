@@ -147,28 +147,54 @@ export function createMockSupabaseClient(): MockSupabaseClient {
       }),
 
       // update() updates records
-      update: vi.fn((updates: any) => ({
-        eq: vi.fn((column: string, value: any) => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => {
-              const index = mockData[table]?.findIndex(
-                (r) => r[column] === value,
+      update: vi.fn((updates: any) => {
+        const updateFilters: Array<[string, any]> = []
+
+        const updateBuilder: any = {
+          eq: vi.fn((column: string, value: any) => {
+            updateFilters.push([column, value])
+            return updateBuilder
+          }),
+          select: vi.fn(() => updateBuilder),
+          single: vi.fn(() => {
+            const index = mockData[table]?.findIndex((r) =>
+              updateFilters.every(([col, val]) => r[col] === val),
+            )
+            if (index > -1) {
+              mockData[table][index] = {
+                ...mockData[table][index],
+                ...updates,
+              }
+              return Promise.resolve({
+                data: mockData[table][index],
+                error: null,
+              })
+            }
+            return Promise.resolve({ data: null, error: null })
+          }),
+          then: undefined as any,
+        }
+
+        // Support awaiting the builder directly (no .select().single())
+        Object.defineProperty(updateBuilder, 'then', {
+          get() {
+            return (resolve: any) => {
+              const index = mockData[table]?.findIndex((r) =>
+                updateFilters.every(([col, val]) => r[col] === val),
               )
               if (index > -1) {
                 mockData[table][index] = {
                   ...mockData[table][index],
                   ...updates,
                 }
-                return Promise.resolve({
-                  data: mockData[table][index],
-                  error: null,
-                })
               }
-              return Promise.resolve({ data: null, error: null })
-            }),
-          })),
-        })),
-      })),
+              return Promise.resolve({ data: null, error: null }).then(resolve)
+            }
+          },
+        })
+
+        return updateBuilder
+      }),
 
       // delete() removes records
       delete: vi.fn(() => ({

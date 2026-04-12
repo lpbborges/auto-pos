@@ -210,6 +210,16 @@ describe('actions', () => {
 
   describe('deleteProduct', () => {
     it('should soft delete product', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(locals.supabase as any)._mockData.products.push({
+        id: 'product-1',
+        name: 'Test Product',
+        price: 100,
+        stock: 10,
+        unit: 'und',
+        store_id: 'store-1',
+      })
+
       const formData = createMockFormData({ id: 'product-1' })
 
       const event = createMockRequestEvent(formData, locals)
@@ -323,12 +333,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 10 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 10 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
             update: vi.fn(() => ({
@@ -517,12 +529,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 20 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 20 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
             update: vi.fn(() => ({
@@ -611,12 +625,14 @@ describe('actions', () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
-                single: vi.fn(() =>
-                  Promise.resolve({
-                    data: { stock: 2 },
-                    error: null,
-                  }),
-                ),
+                eq: vi.fn(() => ({
+                  single: vi.fn(() =>
+                    Promise.resolve({
+                      data: { stock: 2 },
+                      error: null,
+                    }),
+                  ),
+                })),
               })),
             })),
           }

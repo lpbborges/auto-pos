@@ -1,6 +1,9 @@
 import { json, error } from '@sveltejs/kit'
 import { createClient } from '@supabase/supabase-js'
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private'
+import {
+  PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+  PRIVATE_INTERNAL_API_KEY,
+} from '$env/static/private'
 import { PUBLIC_SUPABASE_URL } from '$env/static/public'
 import { z } from 'zod'
 import type { RequestEvent } from '@sveltejs/kit'
@@ -19,15 +22,20 @@ const adminClient = createClient(
 
 export async function POST({ request }: RequestEvent) {
   try {
+    const authHeader = request.headers.get('Authorization')
+    if (
+      !authHeader?.startsWith('Bearer ') ||
+      authHeader.slice(7) !== PRIVATE_INTERNAL_API_KEY
+    ) {
+      throw error(401, 'Unauthorized')
+    }
+
     const body = await request.json()
 
     // Validate input
     const result = signupSchema.safeParse(body)
     if (!result.success) {
-      throw error(
-        400,
-        `Validation failed: ${result.error.issues.map((e) => e.message).join(', ')}`,
-      )
+      throw error(400, 'Invalid registration data')
     }
 
     const { email, password, storeId } = result.data
@@ -52,7 +60,7 @@ export async function POST({ request }: RequestEvent) {
       })
 
     if (authError) {
-      throw error(400, authError.message)
+      throw error(400, 'Failed to create user')
     }
 
     if (!userData.user) {

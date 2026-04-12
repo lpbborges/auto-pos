@@ -54,7 +54,12 @@ export const actions: Actions = {
     const unitCostRaw = formData.get('unitCost') as string | null
     const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
-    if (!name || isNaN(price)) {
+    if (
+      !name ||
+      name.trim().length === 0 ||
+      name.length > 255 ||
+      isNaN(price)
+    ) {
       return { success: false, error: 'Invalid product data' }
     }
 
@@ -120,7 +125,13 @@ export const actions: Actions = {
     const price = parseFloat(formData.get('price') as string)
     const unit = (formData.get('unit') as string) || 'und'
 
-    if (!id || !name || isNaN(price)) {
+    if (
+      !id ||
+      !name ||
+      name.trim().length === 0 ||
+      name.length > 255 ||
+      isNaN(price)
+    ) {
       return { success: false, error: 'Invalid product data' }
     }
 
@@ -143,11 +154,23 @@ export const actions: Actions = {
       return { success: false, error: 'User is not a member of any store' }
     }
 
+    // Verify product belongs to this store before updating
+    const { data: existingProduct } = await locals.supabase
+      .from('products')
+      .select('store_id')
+      .eq('id', id)
+      .single()
+
+    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+      return { success: false, error: 'Product not found' }
+    }
+
     // Now update product details (name, price, unit)
     const { data, error } = await locals.supabase
       .from('products')
       .update({ name, price, unit, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('store_id', membership.store_id)
       .select()
       .single()
 
@@ -167,10 +190,37 @@ export const actions: Actions = {
       return { success: false, error: 'Product ID is required' }
     }
 
+    const user = locals.user
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: membership } = await locals.supabase
+      .from('store_memberships')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return { success: false, error: 'User is not a member of any store' }
+    }
+
+    // Verify product belongs to this store before deleting
+    const { data: existingProduct } = await locals.supabase
+      .from('products')
+      .select('store_id')
+      .eq('id', id)
+      .single()
+
+    if (!existingProduct || existingProduct.store_id !== membership.store_id) {
+      return { success: false, error: 'Product not found' }
+    }
+
     const { error } = await locals.supabase
       .from('products')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('store_id', membership.store_id)
 
     if (error) {
       console.error('Error deleting product:', error)
@@ -186,6 +236,10 @@ export const actions: Actions = {
     const quantity = parseFloat(formData.get('quantity') as string)
     const unitCost = parseFloat(formData.get('unitCost') as string)
     const reason = (formData.get('reason') as string) || 'Entrada manual'
+
+    if (reason.length > 500) {
+      return { success: false, error: 'Reason too long' }
+    }
 
     if (
       !productId ||
@@ -216,6 +270,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
+      .eq('store_id', membership.store_id)
       .single()
 
     if (!product) {
@@ -279,6 +334,10 @@ export const actions: Actions = {
     const quantity = parseFloat(formData.get('quantity') as string)
     const reason = (formData.get('reason') as string) || 'Saída manual'
 
+    if (reason.length > 500) {
+      return { success: false, error: 'Reason too long' }
+    }
+
     if (!productId || isNaN(quantity) || quantity <= 0) {
       return { success: false, error: 'Dados inválidos' }
     }
@@ -302,6 +361,7 @@ export const actions: Actions = {
       .from('products')
       .select('stock')
       .eq('id', productId)
+      .eq('store_id', membership.store_id)
       .single()
 
     if (!product || product.stock < quantity) {
@@ -373,7 +433,18 @@ export const actions: Actions = {
       return { success: false, error: 'Selecione uma forma de pagamento' }
     }
 
-    const items = JSON.parse(itemsJson)
+    type SaleItem = {
+      product: { id: string; price: number; name: string }
+      quantity: number
+    }
+    let items: SaleItem[]
+    try {
+      const parsed = JSON.parse(itemsJson)
+      if (!Array.isArray(parsed)) throw new Error('items must be an array')
+      items = parsed as SaleItem[]
+    } catch {
+      return { success: false, error: 'Invalid sale data' }
+    }
 
     const user = locals.user
     if (!user) {
@@ -391,9 +462,7 @@ export const actions: Actions = {
     }
 
     // Check stock availability for all items before processing
-    const productIds = items.map(
-      (item: { product: { id: string } }) => item.product.id,
-    )
+    const productIds = items.map((item) => item.product.id)
 
     const { data: products, error: productsError } = await locals.supabase
       .from('products')
@@ -466,16 +535,14 @@ export const actions: Actions = {
       return { success: false, error: saleError.message }
     }
 
-    const saleItems = items.map(
-      (item: { product: { id: string; price: number }; quantity: number }) => ({
-        sale_id: sale.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        price_at_sale: item.product.price,
-        cost_at_sale: avgCostMap[item.product.id] ?? 0,
-        store_id: membership.store_id,
-      }),
-    )
+    const saleItems = items.map((item) => ({
+      sale_id: sale.id,
+      product_id: item.product.id,
+      quantity: item.quantity,
+      price_at_sale: item.product.price,
+      cost_at_sale: avgCostMap[item.product.id] ?? 0,
+      store_id: membership.store_id,
+    }))
 
     const { error: itemsError } = await locals.supabase
       .from('sale_items')
@@ -490,21 +557,16 @@ export const actions: Actions = {
     const createdMovementIds: string[] = []
 
     for (const item of items) {
-      const typedItem = item as {
-        product: { id: string; stock: number }
-        quantity: number
-      }
-
       const movementId = generateUUIDv7()
 
       const { error: movementError } = await locals.supabase
         .from('stock_movements')
         .insert({
           id: movementId,
-          product_id: typedItem.product.id,
+          product_id: item.product.id,
           store_id: membership.store_id,
           type: 'out',
-          quantity: typedItem.quantity,
+          quantity: item.quantity,
           reason: 'Venda',
           sale_id: sale.id,
         })
@@ -523,8 +585,8 @@ export const actions: Actions = {
 
       const { data: adjustResult, error: stockError } =
         await locals.supabase.rpc('adjust_product_stock', {
-          p_product_id: typedItem.product.id,
-          p_delta: -typedItem.quantity,
+          p_product_id: item.product.id,
+          p_delta: -item.quantity,
           p_updated_at: new Date().toISOString(),
         })
 
