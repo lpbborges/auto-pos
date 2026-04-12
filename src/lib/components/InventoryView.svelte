@@ -23,6 +23,7 @@
   import DeleteProductDialog from './DeleteProductDialog.svelte'
   import StockMovementDialog from './StockMovementDialog.svelte'
   import { formatQuantity, formatPricePerUnit } from '$lib/utils'
+  import { onDestroy } from 'svelte'
   import { filteredProducts, searchQuery } from '$lib/stores'
   import type { Product } from '$lib/types'
 
@@ -55,6 +56,8 @@
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => searchQuery.set(value), 150)
   }
+
+  onDestroy(() => clearTimeout(debounceTimer))
 </script>
 
 <div class="flex min-h-screen flex-col pb-20">
