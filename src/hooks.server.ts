@@ -49,7 +49,12 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.user = user
   event.locals.storeId = null
 
-  if (user) {
+  // Check if route requires authentication
+  const isAuthRoute = event.url.pathname === '/login'
+  const isApiRoute = event.url.pathname.startsWith('/api/')
+  const isPublicRoute = isAuthRoute || isApiRoute
+
+  if (user && !isPublicRoute) {
     const { data: membership } = await event.locals.supabase
       .from('store_memberships')
       .select('store_id')
@@ -57,11 +62,6 @@ export const handle: Handle = async ({ event, resolve }) => {
       .single()
     event.locals.storeId = membership?.store_id ?? null
   }
-
-  // Check if route requires authentication
-  const isAuthRoute = event.url.pathname === '/login'
-  const isApiRoute = event.url.pathname.startsWith('/api/')
-  const isPublicRoute = isAuthRoute || isApiRoute
 
   // If not authenticated and trying to access protected route, redirect to login
   if (!session && !isPublicRoute) {
