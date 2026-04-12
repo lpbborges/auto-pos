@@ -1,12 +1,12 @@
 <script lang="ts">
   import { tick } from 'svelte'
-  import { SvelteMap } from 'svelte/reactivity'
   import { Send, Bot } from 'lucide-svelte'
   import { cn } from '$lib/utils'
   import { marked } from 'marked'
   import DOMPurify from 'dompurify'
 
-  const renderCache = new SvelteMap<string, string>()
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- plain Map intentional: avoids Svelte reactivity overhead on every cache write during streaming
+  const renderCache = new Map<string, string>()
   function renderMarkdown(content: string): string {
     if (renderCache.has(content)) return renderCache.get(content)!
     const html = DOMPurify.sanitize(marked.parse(content) as string)
@@ -67,7 +67,6 @@
         const last = messages[messages.length - 1]
         if (last) {
           last.content += chunk
-          messages = [...messages.slice(0, -1), last]
         }
         scrollToBottom()
       }
