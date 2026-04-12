@@ -64,7 +64,8 @@ export async function POST(event: RequestEvent) {
                 (m as Record<string, unknown>).role === 'assistant') &&
               typeof (m as Record<string, unknown>).content === 'string' &&
               ((m as Record<string, unknown>).content as string).trim().length >
-                0,
+                0 &&
+              ((m as Record<string, unknown>).content as string).length <= 2000,
           )
           .slice(-MAX_HISTORY)
       : []
