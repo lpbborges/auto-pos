@@ -17,7 +17,7 @@ export const actions: Actions = {
     })
 
     if (error) {
-      return fail(400, { error: error.message })
+      return fail(400, { error: 'Email ou senha inválidos' })
     }
 
     if (data.session) {

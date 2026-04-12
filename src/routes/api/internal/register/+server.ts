@@ -1,4 +1,5 @@
 import { json, error } from '@sveltejs/kit'
+import { timingSafeEqual } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import {
   PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
@@ -23,10 +24,19 @@ const adminClient = createClient(
 export async function POST({ request }: RequestEvent) {
   try {
     const authHeader = request.headers.get('Authorization')
-    if (
-      !authHeader?.startsWith('Bearer ') ||
-      authHeader.slice(7) !== PRIVATE_INTERNAL_API_KEY
-    ) {
+    const provided = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : ''
+    const expected = PRIVATE_INTERNAL_API_KEY
+    let authorized = false
+    try {
+      const a = Buffer.from(provided)
+      const b = Buffer.from(expected)
+      authorized = a.byteLength === b.byteLength && timingSafeEqual(a, b)
+    } catch {
+      authorized = false
+    }
+    if (!authorized) {
       throw error(401, 'Unauthorized')
     }
 

@@ -4,6 +4,23 @@ import type { RequestEvent } from '@sveltejs/kit'
 import { getSystemPrompt } from '$lib/ai/system-prompt'
 import { getToolDefinitions, executeToolCall } from '$lib/ai/tools'
 
+// Simple in-memory rate limiter: 20 requests per 60 seconds per user
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 20
+const RATE_LIMIT_WINDOW_MS = 60_000
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false
+  entry.count++
+  return true
+}
+
 const MAX_HISTORY = 10
 const MAX_TOOL_ITERATIONS = 5
 
@@ -14,6 +31,10 @@ export async function POST(event: RequestEvent) {
 
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
+  }
+
+  if (!checkRateLimit(user.id)) {
+    return new Response('Too Many Requests', { status: 429 })
   }
 
   const { data: membership } = await event.locals.supabase
@@ -43,7 +64,8 @@ export async function POST(event: RequestEvent) {
                 (m as Record<string, unknown>).role === 'assistant') &&
               typeof (m as Record<string, unknown>).content === 'string' &&
               ((m as Record<string, unknown>).content as string).trim().length >
-                0,
+                0 &&
+              ((m as Record<string, unknown>).content as string).length <= 2000,
           )
           .slice(-MAX_HISTORY)
       : []

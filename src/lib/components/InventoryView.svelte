@@ -23,6 +23,7 @@
   import DeleteProductDialog from './DeleteProductDialog.svelte'
   import StockMovementDialog from './StockMovementDialog.svelte'
   import { formatQuantity, formatPricePerUnit } from '$lib/utils'
+  import { onDestroy } from 'svelte'
   import { filteredProducts, searchQuery } from '$lib/stores'
   import type { Product } from '$lib/types'
 
@@ -48,6 +49,15 @@
     stockMovementProduct = product
     isStockMovementOpen = true
   }
+
+  let debounceTimer: ReturnType<typeof setTimeout>
+  function handleSearch(e: Event) {
+    const value = (e.currentTarget as HTMLInputElement).value
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => searchQuery.set(value), 150)
+  }
+
+  onDestroy(() => clearTimeout(debounceTimer))
 </script>
 
 <div class="flex min-h-screen flex-col pb-20">
@@ -81,7 +91,7 @@
         type="search"
         placeholder="Procurar produtos..."
         value={$searchQuery}
-        oninput={(e) => searchQuery.set(e.currentTarget.value)}
+        oninput={handleSearch}
         class="touch-target pl-10"
       />
     </div>
