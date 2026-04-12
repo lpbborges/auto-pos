@@ -35,10 +35,7 @@ export async function POST({ request }: RequestEvent) {
     // Validate input
     const result = signupSchema.safeParse(body)
     if (!result.success) {
-      throw error(
-        400,
-        `Validation failed: ${result.error.issues.map((e) => e.message).join(', ')}`,
-      )
+      throw error(400, 'Invalid registration data')
     }
 
     const { email, password, storeId } = result.data
@@ -63,7 +60,7 @@ export async function POST({ request }: RequestEvent) {
       })
 
     if (authError) {
-      throw error(400, authError.message)
+      throw error(400, 'Failed to create user')
     }
 
     if (!userData.user) {
