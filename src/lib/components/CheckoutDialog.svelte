@@ -22,6 +22,9 @@
   let isSubmitting = $state(false)
   let selectedPayment = $state<PaymentMethod | null>(null)
 
+  const todayStr = new Date().toISOString().split('T')[0]
+  let saleDate = $state(todayStr)
+
   const paymentOptions: {
     value: PaymentMethod
     label: string
@@ -44,6 +47,7 @@
   $effect(() => {
     if (open) {
       selectedPayment = null
+      saleDate = new Date().toISOString().split('T')[0]
     }
   })
 
@@ -90,6 +94,17 @@
     </div>
   </div>
 
+  <!-- Sale Date -->
+  <div class="space-y-2 pt-2">
+    <p class="text-sm font-medium text-center">Data da venda</p>
+    <input
+      type="date"
+      bind:value={saleDate}
+      max={new Date().toISOString().split('T')[0]}
+      class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+    />
+  </div>
+
   <form
     method="POST"
     action="?/processSale"
@@ -134,6 +149,8 @@
     <input type="hidden" name="items" value={JSON.stringify(items)} />
     <input type="hidden" name="total" value={total} />
     <input type="hidden" name="paymentMethod" value={selectedPayment ?? ''} />
+    <!-- saleDate is controlled by the date picker above -->
+    <input type="hidden" name="saleDate" value={saleDate} />
 
     <Button
       type="button"
