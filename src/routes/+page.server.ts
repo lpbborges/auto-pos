@@ -387,6 +387,7 @@ export const actions: Actions = {
     const itemsJson = formData.get('items') as string
     const total = parseFloat(formData.get('total') as string)
     const paymentMethod = formData.get('paymentMethod') as string
+    const saleDateRaw = (formData.get('saleDate') as string) || ''
 
     if (!itemsJson || isNaN(total)) {
       return { success: false, error: 'Invalid sale data' }
@@ -395,6 +396,17 @@ export const actions: Actions = {
     const validPaymentMethods = ['cash', 'pix', 'debit_card', 'credit_card']
     if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
       return { success: false, error: 'Selecione uma forma de pagamento' }
+    }
+
+    // UTC-based — server boundary is slightly more conservative than user's local clock
+    const today = new Date().toISOString().split('T')[0]
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/
+    let soldAt = today
+    if (saleDateRaw) {
+      if (!datePattern.test(saleDateRaw) || saleDateRaw > today) {
+        return { success: false, error: 'Data de venda inválida' }
+      }
+      soldAt = saleDateRaw
     }
 
     type SaleItem = {
@@ -475,7 +487,12 @@ export const actions: Actions = {
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
       .insert([
-        { total, store_id: locals.storeId, payment_method: paymentMethod },
+        {
+          total,
+          store_id: locals.storeId,
+          payment_method: paymentMethod,
+          sold_at: soldAt,
+        },
       ])
       .select()
       .single()

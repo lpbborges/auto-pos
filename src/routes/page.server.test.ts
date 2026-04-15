@@ -315,6 +315,93 @@ describe('actions', () => {
         expect(result.error).toBe('User not authenticated')
       }
     })
+
+    it('should accept a valid saleDate and store it as sold_at', async () => {
+      const items = [
+        {
+          product: { id: 'prod-2', price: 50, stock: 5, name: 'Item' },
+          quantity: 1,
+        },
+      ]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSupabase = locals.supabase as any
+      mockSupabase._mockData.products.push({
+        id: 'prod-2',
+        stock: 5,
+        name: 'Item',
+        price: 50,
+        store_id: 'store-1',
+      })
+      const formData = createMockFormData({
+        paymentMethod: 'pix',
+        items: JSON.stringify(items),
+        total: '50',
+        saleDate: '2026-04-10',
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = (await actions.processSale(
+        event as unknown as Parameters<Actions['processSale']>[0],
+      )) as SaleResult
+
+      expect(isSaleSuccess(result)).toBe(true)
+    })
+
+    it('should fall back to today when saleDate is missing', async () => {
+      const items = [
+        {
+          product: { id: 'prod-3', price: 25, stock: 3, name: 'Item' },
+          quantity: 1,
+        },
+      ]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mockSupabase = locals.supabase as any
+      mockSupabase._mockData.products.push({
+        id: 'prod-3',
+        stock: 3,
+        name: 'Item',
+        price: 25,
+        store_id: 'store-1',
+      })
+      const formData = createMockFormData({
+        paymentMethod: 'cash',
+        items: JSON.stringify(items),
+        total: '25',
+        // no saleDate
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = (await actions.processSale(
+        event as unknown as Parameters<Actions['processSale']>[0],
+      )) as SaleResult
+
+      expect(isSaleSuccess(result)).toBe(true)
+    })
+
+    it('should reject a future saleDate', async () => {
+      const futureDate = new Date()
+      futureDate.setDate(futureDate.getDate() + 1)
+      const futureDateStr = futureDate.toISOString().split('T')[0]
+
+      const formData = createMockFormData({
+        paymentMethod: 'cash',
+        items: JSON.stringify([
+          { product: { id: 'x', price: 1 }, quantity: 1 },
+        ]),
+        total: '1',
+        saleDate: futureDateStr,
+      })
+
+      const event = createMockRequestEvent(formData, locals)
+      const result = (await actions.processSale(
+        event as unknown as Parameters<Actions['processSale']>[0],
+      )) as SaleResult
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error).toBe('Data de venda inválida')
+      }
+    })
   })
 
   describe('createStockIn', () => {
