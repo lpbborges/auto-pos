@@ -35,3 +35,8 @@ export function formatDate(dateString: string): string {
     minute: '2-digit',
   }).format(date)
 }
+
+export function formatDateOnly(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-')
+  return `${day}/${month}/${year}`
+}

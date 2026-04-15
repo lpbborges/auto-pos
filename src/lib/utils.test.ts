@@ -5,6 +5,7 @@ import {
   formatDate,
   formatQuantity,
   formatPricePerUnit,
+  formatDateOnly,
 } from './utils'
 
 describe('cn', () => {
@@ -89,5 +90,15 @@ describe('formatPricePerUnit', () => {
   it('should format price with unit', () => {
     expect(formatPricePerUnit(10.5, 'kg')).toBe('R$\u00a010,50/kg')
     expect(formatPricePerUnit(5, 'und')).toBe('R$\u00a05,00/und')
+  })
+})
+
+describe('formatDateOnly', () => {
+  it('formats a YYYY-MM-DD string to dd/MM/yyyy', () => {
+    expect(formatDateOnly('2026-04-15')).toBe('15/04/2026')
+  })
+
+  it('handles first of month', () => {
+    expect(formatDateOnly('2026-01-01')).toBe('01/01/2026')
   })
 })
