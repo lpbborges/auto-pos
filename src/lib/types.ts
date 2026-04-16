@@ -45,6 +45,8 @@ export interface Sale {
   total: number
   paymentMethod: PaymentMethod
   createdAt: string
+  soldAt?: string
+  sold_at?: string
   sale_items?: {
     id: string
     product_id: string

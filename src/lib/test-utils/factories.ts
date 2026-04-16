@@ -33,6 +33,7 @@ export function createSale(overrides: Partial<Sale> = {}): Sale {
     items: [],
     total: 0,
     createdAt: new Date().toISOString(),
+    soldAt: new Date().toISOString().split('T')[0],
     ...overrides,
   }
 }

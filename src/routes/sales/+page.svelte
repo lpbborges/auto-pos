@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatCurrency, formatDate } from '$lib/utils'
+  import { formatCurrency, formatDate, formatDateOnly } from '$lib/utils'
   import {
     ArrowLeft,
     Receipt,
@@ -146,7 +146,9 @@
             <div class="flex items-center gap-2">
               <Receipt class="h-4 w-4 text-muted-foreground" />
               <span class="text-sm text-muted-foreground">
-                {formatDate(sale.created_at)}
+                {sale.sold_at
+                  ? formatDateOnly(sale.sold_at)
+                  : formatDate(sale.created_at)}
               </span>
             </div>
             <span class="text-lg font-bold text-primary">
