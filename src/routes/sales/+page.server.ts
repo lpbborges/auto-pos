@@ -35,18 +35,18 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const now = new Date()
 
   if (filter === 'today') {
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
+    const startOfDay = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
     )
-    query = query.gte('created_at', startOfDay.toISOString())
+    query = query.gte('created_at', new Date(startOfDay).toISOString())
   } else if (filter === 'week') {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     query = query.gte('created_at', sevenDaysAgo.toISOString())
   } else if (filter === 'month') {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    query = query.gte('created_at', startOfMonth.toISOString())
+    const startOfMonth = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    query = query.gte('created_at', new Date(startOfMonth).toISOString())
   }
 
   const { data: sales, error } = await query
