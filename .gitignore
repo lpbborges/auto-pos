@@ -33,6 +33,7 @@ test-results
 .ignore
 .aider*
 .cursorrules
+.env
 .env.*
 .env
 !.env.example
