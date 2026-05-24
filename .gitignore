@@ -35,4 +35,5 @@ test-results
 .cursorrules
 .env
 .env.*
+.env
 !.env.example

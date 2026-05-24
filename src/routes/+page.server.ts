@@ -3,6 +3,18 @@ import { v7 as generateUUIDv7 } from 'uuid'
 import type { Actions, PageServerLoad } from './$types'
 import { PRODUCT_UNITS } from '$lib/constants'
 
+function requireAuth(
+  locals: App.Locals,
+): { success: false; error: string } | null {
+  if (!locals.user) {
+    return { success: false, error: 'User not authenticated' }
+  }
+  if (!locals.storeId) {
+    return { success: false, error: 'User is not a member of any store' }
+  }
+  return null
+}
+
 export const load: PageServerLoad = async ({ locals }) => {
   const user = locals.user
 
@@ -60,14 +72,8 @@ export const actions: Actions = {
       return { success: false, error: 'Invalid unit' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     const { data, error } = await locals.supabase
       .from('products')
@@ -127,14 +133,8 @@ export const actions: Actions = {
       return { success: false, error: 'Invalid unit' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     // Verify product belongs to this store before updating
     const { data: existingProduct } = await locals.supabase
@@ -172,14 +172,8 @@ export const actions: Actions = {
       return { success: false, error: 'Product ID is required' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     // Verify product belongs to this store before deleting
     const { data: existingProduct } = await locals.supabase
@@ -227,14 +221,8 @@ export const actions: Actions = {
       return { success: false, error: 'Dados inválidos' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     const { data: product } = await locals.supabase
       .from('products')
@@ -312,14 +300,8 @@ export const actions: Actions = {
       return { success: false, error: 'Dados inválidos' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     const { data: product } = await locals.supabase
       .from('products')
@@ -422,14 +404,8 @@ export const actions: Actions = {
       return { success: false, error: 'Invalid sale data' }
     }
 
-    const user = locals.user
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    if (!locals.storeId) {
-      return { success: false, error: 'User is not a member of any store' }
-    }
+    const authError = requireAuth(locals)
+    if (authError) return authError
 
     // Check stock availability for all items before processing
     const productIds = items.map((item) => item.product.id)
