@@ -91,7 +91,6 @@
   >
     {#if product}
       <input type="hidden" name="id" value={product.id} />
-      <input type="hidden" name="previousStock" value={product.stock} />
     {/if}
 
     <div class="space-y-2">

@@ -1,7 +1,7 @@
 import type OpenAI from 'openai'
 import { v7 as generateUUIDv7 } from 'uuid'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PRODUCT_UNITS } from '$lib/constants'
+import { validateProductData } from '$lib/utils'
 
 export function getToolDefinitions(): OpenAI.Chat.ChatCompletionTool[] {
   return [
@@ -107,7 +107,7 @@ export async function executeToolCall(
       case 'get_products': {
         const { data, error } = await supabase
           .from('products')
-          .select('name, price, stock, unit')
+          .select('id, name, price, stock, unit')
           .is('deleted_at', null)
           .eq('store_id', storeId)
           .order('name')
@@ -122,7 +122,7 @@ export async function executeToolCall(
             : 5
         const { data, error } = await supabase
           .from('products')
-          .select('name, price, stock, unit')
+          .select('id, name, price, stock, unit')
           .is('deleted_at', null)
           .eq('store_id', storeId)
           .lte('stock', threshold)
@@ -167,15 +167,9 @@ export async function executeToolCall(
         const stock =
           typeof input.stock === 'number' ? Math.max(0, input.stock) : 0
 
-        if (
-          !name ||
-          isNaN(price) ||
-          price <= 0 ||
-          !PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])
-        ) {
-          return {
-            error: 'Invalid product data: name, price, and unit are required',
-          }
+        const validationError = validateProductData(name, price, unit)
+        if (validationError) {
+          return { error: 'Invalid product data: ' + validationError }
         }
 
         const { data, error } = await supabase

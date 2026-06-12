@@ -39,14 +39,17 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   credit_card: 'Crédito',
 }
 
+export const VALID_PAYMENT_METHODS: PaymentMethod[] = [
+  'cash',
+  'pix',
+  'debit_card',
+  'credit_card',
+]
+
 export interface Sale {
   id: string
-  items: CartItem[]
   total: number
-  paymentMethod: PaymentMethod
-  createdAt: string
-  soldAt?: string
-  sold_at?: string
+  sold_at: string
   sale_items?: {
     id: string
     product_id: string
