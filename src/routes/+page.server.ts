@@ -7,10 +7,10 @@ function requireAuth(
   locals: App.Locals,
 ): { success: false; error: string } | null {
   if (!locals.user) {
-    return { success: false, error: 'User not authenticated' }
+    return { success: false, error: 'Usuário não autenticado' }
   }
   if (!locals.storeId) {
-    return { success: false, error: 'User is not a member of any store' }
+    return { success: false, error: 'Usuário não pertence a uma loja' }
   }
   return null
 }
@@ -22,6 +22,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     .from('products')
     .select('*')
     .is('deleted_at', null)
+    .eq('store_id', locals.storeId)
     .order('created_at', { ascending: false })
 
   if (productsError) {
@@ -50,6 +51,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
   createProduct: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const name = formData.get('name') as string
     const price = parseFloat(formData.get('price') as string)
@@ -65,15 +69,12 @@ export const actions: Actions = {
       isNaN(price) ||
       price <= 0
     ) {
-      return { success: false, error: 'Invalid product data' }
+      return { success: false, error: 'Dados do produto inválidos' }
     }
 
     if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
-      return { success: false, error: 'Invalid unit' }
+      return { success: false, error: 'Unidade inválida' }
     }
-
-    const authError = requireAuth(locals)
-    if (authError) return authError
 
     const { data, error } = await locals.supabase
       .from('products')
@@ -83,7 +84,7 @@ export const actions: Actions = {
 
     if (error) {
       console.error('Error creating product:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: 'Erro ao criar produto' }
     }
 
     if (stock > 0) {
@@ -104,7 +105,7 @@ export const actions: Actions = {
       if (movementError) {
         console.error('Error creating stock movement:', movementError)
         await locals.supabase.from('products').delete().eq('id', data.id)
-        return { success: false, error: movementError.message }
+        return { success: false, error: 'Erro ao criar movimento de estoque' }
       }
     }
 
@@ -112,6 +113,9 @@ export const actions: Actions = {
   },
 
   updateProduct: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const id = formData.get('id') as string
     const name = formData.get('name') as string
@@ -126,15 +130,12 @@ export const actions: Actions = {
       isNaN(price) ||
       price <= 0
     ) {
-      return { success: false, error: 'Invalid product data' }
+      return { success: false, error: 'Dados do produto inválidos' }
     }
 
     if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
-      return { success: false, error: 'Invalid unit' }
+      return { success: false, error: 'Unidade inválida' }
     }
-
-    const authError = requireAuth(locals)
-    if (authError) return authError
 
     // Verify product belongs to this store before updating
     const { data: existingProduct } = await locals.supabase
@@ -144,10 +145,9 @@ export const actions: Actions = {
       .single()
 
     if (!existingProduct || existingProduct.store_id !== locals.storeId) {
-      return { success: false, error: 'Product not found' }
+      return { success: false, error: 'Produto não encontrado' }
     }
 
-    // Now update product details (name, price, unit)
     const { data, error } = await locals.supabase
       .from('products')
       .update({ name, price, unit, updated_at: new Date().toISOString() })
@@ -158,22 +158,22 @@ export const actions: Actions = {
 
     if (error) {
       console.error('Error updating product:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: 'Erro ao atualizar produto' }
     }
 
     return { success: true, product: data }
   },
 
   deleteProduct: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const id = formData.get('id') as string
 
     if (!id) {
-      return { success: false, error: 'Product ID is required' }
+      return { success: false, error: 'ID do produto não informado' }
     }
-
-    const authError = requireAuth(locals)
-    if (authError) return authError
 
     // Verify product belongs to this store before deleting
     const { data: existingProduct } = await locals.supabase
@@ -183,7 +183,7 @@ export const actions: Actions = {
       .single()
 
     if (!existingProduct || existingProduct.store_id !== locals.storeId) {
-      return { success: false, error: 'Product not found' }
+      return { success: false, error: 'Produto não encontrado' }
     }
 
     const { error } = await locals.supabase
@@ -194,13 +194,16 @@ export const actions: Actions = {
 
     if (error) {
       console.error('Error deleting product:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: 'Erro ao excluir produto' }
     }
 
     return { success: true }
   },
 
   createStockIn: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const productId = formData.get('productId') as string
     const quantity = parseFloat(formData.get('quantity') as string)
@@ -208,7 +211,7 @@ export const actions: Actions = {
     const reason = (formData.get('reason') as string) || 'Entrada manual'
 
     if (reason.length > 500) {
-      return { success: false, error: 'Reason too long' }
+      return { success: false, error: 'Motivo muito longo' }
     }
 
     if (
@@ -220,9 +223,6 @@ export const actions: Actions = {
     ) {
       return { success: false, error: 'Dados inválidos' }
     }
-
-    const authError = requireAuth(locals)
-    if (authError) return authError
 
     const { data: product } = await locals.supabase
       .from('products')
@@ -251,7 +251,7 @@ export const actions: Actions = {
 
     if (movementError) {
       console.error('Error creating stock in:', movementError)
-      return { success: false, error: movementError.message }
+      return { success: false, error: 'Erro ao criar entrada de estoque' }
     }
 
     const { data: adjustResult, error: stockError } = await locals.supabase.rpc(
@@ -269,7 +269,7 @@ export const actions: Actions = {
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
-      return { success: false, error: stockError.message }
+      return { success: false, error: 'Erro ao atualizar estoque' }
     }
 
     if (!adjustResult?.success) {
@@ -279,7 +279,7 @@ export const actions: Actions = {
         .eq('id', movementId)
       return {
         success: false,
-        error: adjustResult?.error || 'Failed to update stock',
+        error: adjustResult?.error || 'Erro ao atualizar estoque',
       }
     }
 
@@ -287,21 +287,21 @@ export const actions: Actions = {
   },
 
   createStockOut: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const productId = formData.get('productId') as string
     const quantity = parseFloat(formData.get('quantity') as string)
     const reason = (formData.get('reason') as string) || 'Saída manual'
 
     if (reason.length > 500) {
-      return { success: false, error: 'Reason too long' }
+      return { success: false, error: 'Motivo muito longo' }
     }
 
     if (!productId || isNaN(quantity) || quantity <= 0) {
       return { success: false, error: 'Dados inválidos' }
     }
-
-    const authError = requireAuth(locals)
-    if (authError) return authError
 
     const { data: product } = await locals.supabase
       .from('products')
@@ -329,7 +329,7 @@ export const actions: Actions = {
 
     if (movementError) {
       console.error('Error creating stock out:', movementError)
-      return { success: false, error: movementError.message }
+      return { success: false, error: 'Erro ao criar saída de estoque' }
     }
 
     const { data: adjustResult, error: stockError } = await locals.supabase.rpc(
@@ -347,7 +347,7 @@ export const actions: Actions = {
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
-      return { success: false, error: stockError.message }
+      return { success: false, error: 'Erro ao atualizar estoque' }
     }
 
     if (!adjustResult?.success) {
@@ -357,7 +357,7 @@ export const actions: Actions = {
         .eq('id', movementId)
       return {
         success: false,
-        error: adjustResult?.error || 'Failed to update stock',
+        error: adjustResult?.error || 'Erro ao atualizar estoque',
       }
     }
 
@@ -365,13 +365,16 @@ export const actions: Actions = {
   },
 
   processSale: async ({ request, locals }) => {
+    const authError = requireAuth(locals)
+    if (authError) return authError
+
     const formData = await request.formData()
     const itemsJson = formData.get('items') as string
     const paymentMethod = formData.get('paymentMethod') as string
     const saleDateRaw = (formData.get('saleDate') as string) || ''
 
     if (!itemsJson) {
-      return { success: false, error: 'Invalid sale data' }
+      return { success: false, error: 'Dados da venda inválidos' }
     }
 
     const validPaymentMethods = ['cash', 'pix', 'debit_card', 'credit_card']
@@ -379,13 +382,12 @@ export const actions: Actions = {
       return { success: false, error: 'Selecione uma forma de pagamento' }
     }
 
-    // UTC-based — server boundary is slightly more conservative than user's local clock
     const today = new Date().toISOString().split('T')[0]
     const datePattern = /^\d{4}-\d{2}-\d{2}$/
     let soldAt = today
     if (saleDateRaw) {
       if (!datePattern.test(saleDateRaw) || saleDateRaw > today) {
-        return { success: false, error: 'Data de venda inválida' }
+        return { success: false, error: 'Data da venda inválida' }
       }
       soldAt = saleDateRaw
     }
@@ -400,13 +402,9 @@ export const actions: Actions = {
       if (!Array.isArray(parsed)) throw new Error('items must be an array')
       items = parsed as SaleItem[]
     } catch {
-      return { success: false, error: 'Invalid sale data' }
+      return { success: false, error: 'Dados da venda inválidos' }
     }
 
-    const authError = requireAuth(locals)
-    if (authError) return authError
-
-    // Check stock availability for all items before processing
     const productIds = items.map((item) => item.product.id)
 
     const { data: products, error: productsError } = await locals.supabase
@@ -435,7 +433,7 @@ export const actions: Actions = {
       const currentStock = stockMap[productId]
 
       if (currentStock === undefined) {
-        return { success: false, error: `Produto não encontrado` }
+        return { success: false, error: 'Produto não encontrado' }
       }
 
       if (currentStock < quantity) {
@@ -466,6 +464,38 @@ export const actions: Actions = {
       return sum + price * item.quantity
     }, 0)
 
+    // Atomically claim stock before creating any records
+    const updatedAt = new Date().toISOString()
+    const adjustResults = await Promise.all(
+      items.map((item) =>
+        locals.supabase.rpc('adjust_product_stock', {
+          p_product_id: item.product.id,
+          p_delta: -item.quantity,
+          p_updated_at: updatedAt,
+        }),
+      ),
+    )
+
+    const hasFailure = adjustResults.some((r) => r.error || !r.data?.success)
+    if (hasFailure) {
+      // Reverse any successful adjustments
+      await Promise.all(
+        adjustResults.map((r, i) =>
+          r.data?.success
+            ? locals.supabase.rpc('adjust_product_stock', {
+                p_product_id: items[i].product.id,
+                p_delta: items[i].quantity,
+                p_updated_at: updatedAt,
+              })
+            : Promise.resolve(),
+        ),
+      )
+      return {
+        success: false,
+        error: 'Estoque insuficiente para completar a venda',
+      }
+    }
+
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
       .insert([
@@ -481,7 +511,16 @@ export const actions: Actions = {
 
     if (saleError) {
       console.error('Error creating sale:', saleError)
-      return { success: false, error: saleError.message }
+      await Promise.all(
+        items.map((item) =>
+          locals.supabase.rpc('adjust_product_stock', {
+            p_product_id: item.product.id,
+            p_delta: item.quantity,
+            p_updated_at: updatedAt,
+          }),
+        ),
+      )
+      return { success: false, error: 'Erro ao processar venda' }
     }
 
     const saleItems = items.map((item) => ({
@@ -500,10 +539,18 @@ export const actions: Actions = {
     if (itemsError) {
       console.error('Error creating sale items:', itemsError)
       await locals.supabase.from('sales').delete().eq('id', sale.id)
-      return { success: false, error: itemsError.message }
+      await Promise.all(
+        items.map((item) =>
+          locals.supabase.rpc('adjust_product_stock', {
+            p_product_id: item.product.id,
+            p_delta: item.quantity,
+            p_updated_at: updatedAt,
+          }),
+        ),
+      )
+      return { success: false, error: 'Erro ao processar venda' }
     }
 
-    // Batch insert all stock movements
     const movementIds = items.map(() => generateUUIDv7())
     const movements = items.map((item, i) => ({
       id: movementIds[i],
@@ -523,41 +570,16 @@ export const actions: Actions = {
       console.error('Error creating stock movements:', movementsError)
       await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
       await locals.supabase.from('sales').delete().eq('id', sale.id)
-      return { success: false, error: movementsError.message }
-    }
-
-    // Adjust all stock levels in parallel
-    const updatedAt = new Date().toISOString()
-    const adjustResults = await Promise.all(
-      items.map((item) =>
-        locals.supabase.rpc('adjust_product_stock', {
-          p_product_id: item.product.id,
-          p_delta: -item.quantity,
-          p_updated_at: updatedAt,
-        }),
-      ),
-    )
-
-    for (const { data: adjustResult, error: stockError } of adjustResults) {
-      if (stockError || !adjustResult?.success) {
-        console.error(
-          'Error adjusting stock:',
-          stockError ?? adjustResult?.error,
-        )
-        await locals.supabase
-          .from('stock_movements')
-          .delete()
-          .in('id', movementIds)
-        await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
-        await locals.supabase.from('sales').delete().eq('id', sale.id)
-        return {
-          success: false,
-          error:
-            stockError?.message ??
-            adjustResult?.error ??
-            'Failed to update stock',
-        }
-      }
+      await Promise.all(
+        items.map((item) =>
+          locals.supabase.rpc('adjust_product_stock', {
+            p_product_id: item.product.id,
+            p_delta: item.quantity,
+            p_updated_at: updatedAt,
+          }),
+        ),
+      )
+      return { success: false, error: 'Erro ao processar venda' }
     }
 
     return { success: true, sale }
@@ -568,7 +590,7 @@ export const actions: Actions = {
 
     if (error) {
       console.error('Error signing out:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: 'Erro ao sair' }
     }
 
     throw redirect(303, '/login')

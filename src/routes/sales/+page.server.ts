@@ -138,6 +138,7 @@ export const actions: Actions = {
         store_id: locals.storeId,
         type: 'in',
         quantity: item.quantity,
+        unit_cost: 0,
         reason: 'Cancelamento de venda',
         sale_id: sale.id,
       })),

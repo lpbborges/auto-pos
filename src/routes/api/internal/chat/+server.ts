@@ -180,6 +180,9 @@ export async function POST(event: RequestEvent) {
           }
         } catch (err) {
           console.error('[chat] Streaming error:', err)
+          const errorMsg =
+            err instanceof Error ? err.message : 'Streaming error'
+          controller.enqueue(encoder.encode(`\n\n[ERRO: ${errorMsg}]`))
         } finally {
           controller.close()
         }
