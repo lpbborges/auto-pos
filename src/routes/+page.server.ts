@@ -367,11 +367,10 @@ export const actions: Actions = {
   processSale: async ({ request, locals }) => {
     const formData = await request.formData()
     const itemsJson = formData.get('items') as string
-    const total = parseFloat(formData.get('total') as string)
     const paymentMethod = formData.get('paymentMethod') as string
     const saleDateRaw = (formData.get('saleDate') as string) || ''
 
-    if (!itemsJson || isNaN(total)) {
+    if (!itemsJson) {
       return { success: false, error: 'Invalid sale data' }
     }
 
@@ -412,7 +411,7 @@ export const actions: Actions = {
 
     const { data: products, error: productsError } = await locals.supabase
       .from('products')
-      .select('id, stock')
+      .select('id, stock, price')
       .in('id', productIds)
       .eq('store_id', locals.storeId)
 
@@ -422,9 +421,11 @@ export const actions: Actions = {
     }
 
     const stockMap: Record<string, number> = {}
+    const priceMap: Record<string, number> = {}
     if (products) {
       for (const p of products) {
         stockMap[p.id] = p.stock
+        priceMap[p.id] = p.price
       }
     }
 
@@ -460,11 +461,16 @@ export const actions: Actions = {
       }
     }
 
+    const computedTotal = items.reduce((sum, item) => {
+      const price = priceMap[item.product.id] ?? 0
+      return sum + price * item.quantity
+    }, 0)
+
     const { data: sale, error: saleError } = await locals.supabase
       .from('sales')
       .insert([
         {
-          total,
+          total: computedTotal,
           store_id: locals.storeId,
           payment_method: paymentMethod,
           sold_at: soldAt,
@@ -482,7 +488,7 @@ export const actions: Actions = {
       sale_id: sale.id,
       product_id: item.product.id,
       quantity: item.quantity,
-      price_at_sale: item.product.price,
+      price_at_sale: priceMap[item.product.id] ?? 0,
       cost_at_sale: avgCostMap[item.product.id] ?? 0,
       store_id: locals.storeId,
     }))
