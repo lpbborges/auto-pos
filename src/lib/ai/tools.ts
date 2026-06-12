@@ -210,7 +210,8 @@ export async function executeToolCall(
       default:
         return { error: `Unknown tool: ${toolName}` }
     }
-  } catch {
+  } catch (err) {
+    console.error('[tools] Tool execution error:', err)
     return { error: 'Tool execution failed' }
   }
 }

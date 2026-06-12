@@ -24,6 +24,6 @@ export const actions: Actions = {
       throw redirect(303, '/')
     }
 
-    return fail(400, { error: 'Login failed' })
+    return fail(400, { error: 'Erro ao fazer login' })
   },
 }

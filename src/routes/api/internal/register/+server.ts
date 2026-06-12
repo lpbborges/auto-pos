@@ -10,16 +10,14 @@ import { z } from 'zod'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  storeId: z.string().uuid('Invalid store ID'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
+  storeId: z.string().uuid('ID da loja inválido'),
 })
 
-// Admin client with service role for user creation
-const adminClient = createClient(
-  PUBLIC_SUPABASE_URL,
-  PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-)
+function getAdminClient() {
+  return createClient(PUBLIC_SUPABASE_URL, PRIVATE_SUPABASE_SERVICE_ROLE_KEY)
+}
 
 export async function POST({ request }: RequestEvent) {
   try {
@@ -42,15 +40,15 @@ export async function POST({ request }: RequestEvent) {
 
     const body = await request.json()
 
-    // Validate input
     const result = signupSchema.safeParse(body)
     if (!result.success) {
-      throw error(400, 'Invalid registration data')
+      throw error(400, 'Dados de cadastro inválidos')
     }
 
     const { email, password, storeId } = result.data
 
-    // Verify store exists
+    const adminClient = getAdminClient()
+
     const { data: store, error: storeError } = await adminClient
       .from('stores')
       .select('id')
@@ -58,10 +56,9 @@ export async function POST({ request }: RequestEvent) {
       .single()
 
     if (storeError || !store) {
-      throw error(400, 'Store not found')
+      throw error(400, 'Loja não encontrada')
     }
 
-    // Create user
     const { data: userData, error: authError } =
       await adminClient.auth.admin.createUser({
         email,
@@ -70,14 +67,13 @@ export async function POST({ request }: RequestEvent) {
       })
 
     if (authError) {
-      throw error(400, 'Failed to create user')
+      throw error(400, 'Erro ao criar usuário')
     }
 
     if (!userData.user) {
-      throw error(500, 'Failed to create user')
+      throw error(500, 'Erro ao criar usuário')
     }
 
-    // Create membership record
     const { error: membershipError } = await adminClient
       .from('store_memberships')
       .insert({
@@ -86,9 +82,8 @@ export async function POST({ request }: RequestEvent) {
       })
 
     if (membershipError) {
-      // Attempt to clean up the created user if membership fails
       await adminClient.auth.admin.deleteUser(userData.user.id)
-      throw error(500, 'Failed to create store membership')
+      throw error(500, 'Erro ao criar vínculo com a loja')
     }
 
     return json({
@@ -103,6 +98,6 @@ export async function POST({ request }: RequestEvent) {
     if (err && typeof err === 'object' && 'status' in err) {
       throw err
     }
-    throw error(500, 'Internal server error')
+    throw error(500, 'Erro interno do servidor')
   }
 }

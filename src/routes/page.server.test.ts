@@ -124,7 +124,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Invalid product data')
+        expect(result.error).toBe('Dados do produto inválidos')
       }
     })
 
@@ -141,7 +141,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Invalid product data')
+        expect(result.error).toBe('Dados do produto inválidos')
       }
     })
 
@@ -159,7 +159,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('User not authenticated')
+        expect(result.error).toBe('Usuário não autenticado')
       }
     })
   })
@@ -203,7 +203,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Invalid product data')
+        expect(result.error).toBe('Dados do produto inválidos')
       }
     })
   })
@@ -240,7 +240,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Product ID is required')
+        expect(result.error).toBe('ID do produto não informado')
       }
     })
   })
@@ -293,7 +293,7 @@ describe('actions', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error).toBe('Invalid sale data')
+        expect(result.error).toBe('Dados da venda inválidos')
       }
     })
 
@@ -312,7 +312,7 @@ describe('actions', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error).toBe('User not authenticated')
+        expect(result.error).toBe('Usuário não autenticado')
       }
     })
 
@@ -399,7 +399,7 @@ describe('actions', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error).toBe('Data de venda inválida')
+        expect(result.error).toBe('Data da venda inválida')
       }
     })
   })
@@ -559,7 +559,7 @@ describe('actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'User not authenticated',
+        error: 'Usuário não autenticado',
       })
     })
 
@@ -579,7 +579,7 @@ describe('actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'User is not a member of any store',
+        error: 'Usuário não pertence a uma loja',
       })
     })
   })
@@ -750,7 +750,7 @@ describe('actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'User not authenticated',
+        error: 'Usuário não autenticado',
       })
     })
 
@@ -769,7 +769,7 @@ describe('actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'User is not a member of any store',
+        error: 'Usuário não pertence a uma loja',
       })
     })
   })
@@ -805,7 +805,7 @@ describe('actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'Sign out failed',
+        error: 'Erro ao sair',
       })
     })
   })
