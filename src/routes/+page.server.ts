@@ -1,7 +1,8 @@
 import { redirect } from '@sveltejs/kit'
 import { v7 as generateUUIDv7 } from 'uuid'
 import type { Actions, PageServerLoad } from './$types'
-import { PRODUCT_UNITS } from '$lib/constants'
+import { VALID_PAYMENT_METHODS } from '$lib/types'
+import { validateProductData } from '$lib/utils'
 
 function requireAuth(
   locals: App.Locals,
@@ -62,18 +63,9 @@ export const actions: Actions = {
     const unitCostRaw = formData.get('unitCost') as string | null
     const unitCost = unitCostRaw !== null ? parseFloat(unitCostRaw) : 0
 
-    if (
-      !name ||
-      name.trim().length === 0 ||
-      name.length > 255 ||
-      isNaN(price) ||
-      price <= 0
-    ) {
-      return { success: false, error: 'Dados do produto inválidos' }
-    }
-
-    if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
-      return { success: false, error: 'Unidade inválida' }
+    const validationError = validateProductData(name, price, unit)
+    if (validationError) {
+      return { success: false, error: validationError }
     }
 
     const { data, error } = await locals.supabase
@@ -104,7 +96,12 @@ export const actions: Actions = {
 
       if (movementError) {
         console.error('Error creating stock movement:', movementError)
-        await locals.supabase.from('products').delete().eq('id', data.id)
+        const { error: cleanupError } = await locals.supabase
+          .from('products')
+          .delete()
+          .eq('id', data.id)
+        if (cleanupError)
+          console.error('Error cleaning up orphaned product:', cleanupError)
         return { success: false, error: 'Erro ao criar movimento de estoque' }
       }
     }
@@ -122,19 +119,12 @@ export const actions: Actions = {
     const price = parseFloat(formData.get('price') as string)
     const unit = (formData.get('unit') as string) || 'und'
 
-    if (
-      !id ||
-      !name ||
-      name.trim().length === 0 ||
-      name.length > 255 ||
-      isNaN(price) ||
-      price <= 0
-    ) {
-      return { success: false, error: 'Dados do produto inválidos' }
-    }
-
-    if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number])) {
-      return { success: false, error: 'Unidade inválida' }
+    const validationError = validateProductData(name, price, unit)
+    if (!id || validationError) {
+      return {
+        success: false,
+        error: validationError || 'ID do produto inválido',
+      }
     }
 
     // Verify product belongs to this store before updating
@@ -265,18 +255,22 @@ export const actions: Actions = {
 
     if (stockError) {
       console.error('Error updating stock:', stockError)
-      await locals.supabase
+      const { error: cleanupError } = await locals.supabase
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
+      if (cleanupError)
+        console.error('Error cleaning up orphaned movement:', cleanupError)
       return { success: false, error: 'Erro ao atualizar estoque' }
     }
 
     if (!adjustResult?.success) {
-      await locals.supabase
+      const { error: cleanupError } = await locals.supabase
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
+      if (cleanupError)
+        console.error('Error cleaning up orphaned movement:', cleanupError)
       return {
         success: false,
         error: adjustResult?.error || 'Erro ao atualizar estoque',
@@ -343,18 +337,22 @@ export const actions: Actions = {
 
     if (stockError) {
       console.error('Error updating stock:', stockError)
-      await locals.supabase
+      const { error: cleanupError } = await locals.supabase
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
+      if (cleanupError)
+        console.error('Error cleaning up orphaned movement:', cleanupError)
       return { success: false, error: 'Erro ao atualizar estoque' }
     }
 
     if (!adjustResult?.success) {
-      await locals.supabase
+      const { error: cleanupError } = await locals.supabase
         .from('stock_movements')
         .delete()
         .eq('id', movementId)
+      if (cleanupError)
+        console.error('Error cleaning up orphaned movement:', cleanupError)
       return {
         success: false,
         error: adjustResult?.error || 'Erro ao atualizar estoque',
@@ -377,8 +375,12 @@ export const actions: Actions = {
       return { success: false, error: 'Dados da venda inválidos' }
     }
 
-    const validPaymentMethods = ['cash', 'pix', 'debit_card', 'credit_card']
-    if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
+    if (
+      !paymentMethod ||
+      !VALID_PAYMENT_METHODS.includes(
+        paymentMethod as (typeof VALID_PAYMENT_METHODS)[number],
+      )
+    ) {
       return { success: false, error: 'Selecione uma forma de pagamento' }
     }
 
@@ -538,7 +540,11 @@ export const actions: Actions = {
 
     if (itemsError) {
       console.error('Error creating sale items:', itemsError)
-      await locals.supabase.from('sales').delete().eq('id', sale.id)
+      const { error: saleCleanup } = await locals.supabase
+        .from('sales')
+        .delete()
+        .eq('id', sale.id)
+      if (saleCleanup) console.error('Error rolling back sale:', saleCleanup)
       await Promise.all(
         items.map((item) =>
           locals.supabase.rpc('adjust_product_stock', {
@@ -568,8 +574,17 @@ export const actions: Actions = {
 
     if (movementsError) {
       console.error('Error creating stock movements:', movementsError)
-      await locals.supabase.from('sale_items').delete().eq('sale_id', sale.id)
-      await locals.supabase.from('sales').delete().eq('id', sale.id)
+      const { error: itemsCleanup } = await locals.supabase
+        .from('sale_items')
+        .delete()
+        .eq('sale_id', sale.id)
+      if (itemsCleanup)
+        console.error('Error rolling back sale items:', itemsCleanup)
+      const { error: saleCleanup } = await locals.supabase
+        .from('sales')
+        .delete()
+        .eq('id', sale.id)
+      if (saleCleanup) console.error('Error rolling back sale:', saleCleanup)
       await Promise.all(
         items.map((item) =>
           locals.supabase.rpc('adjust_product_stock', {

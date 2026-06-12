@@ -1,10 +1,13 @@
 import { AI_BASE_URL, AI_MODEL, AI_API_KEY } from '$env/static/private'
+import { dev } from '$app/environment'
 import OpenAI from 'openai'
 import type { RequestEvent } from '@sveltejs/kit'
 import { getSystemPrompt } from '$lib/ai/system-prompt'
 import { getToolDefinitions, executeToolCall } from '$lib/ai/tools'
 
-// Simple in-memory rate limiter: 20 requests per 60 seconds per user
+// In-memory rate limiter: 20 requests per 60 seconds per user
+// Note: on Vercel (serverless), each instance has its own memory — this is a
+// best-effort first line. A production-grade solution requires a shared store.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_MAX = 20
 const RATE_LIMIT_WINDOW_MS = 60_000
@@ -40,6 +43,14 @@ export async function POST(event: RequestEvent) {
 
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
+  }
+
+  if (!dev) {
+    const origin = event.request.headers.get('origin')
+    const referer = event.request.headers.get('referer')
+    if (!origin && !referer) {
+      return new Response('Forbidden', { status: 403 })
+    }
   }
 
   if (!checkRateLimit(user.id)) {

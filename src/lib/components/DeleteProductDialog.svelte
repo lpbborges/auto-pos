@@ -30,8 +30,8 @@
   <DialogHeader>
     <DialogTitle>Excluir Produto</DialogTitle>
     <DialogDescription>
-      Tem certeza que deseja excluir <strong>{product?.name}</strong>? Essa ação
-      não pode ser desfeita.
+      Tem certeza que deseja excluir <strong>{product?.name}</strong>? O produto
+      ficará oculto, mas o histórico de vendas será mantido.
     </DialogDescription>
   </DialogHeader>
 

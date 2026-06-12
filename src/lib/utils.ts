@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import type { ProductUnit } from './constants'
-import { UNIT_ALLOWS_FRACTIONS } from './constants'
+import { PRODUCT_UNITS, UNIT_ALLOWS_FRACTIONS } from './constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -42,4 +42,18 @@ export function formatDateOnly(dateStr: string): string {
   }
   const [year, month, day] = dateStr.split('-')
   return `${day}/${month}/${year}`
+}
+
+export function validateProductData(
+  name: string | null | undefined,
+  price: number,
+  unit: string,
+): string | null {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed) return 'Nome do produto inválido'
+  if (trimmed.length > 255) return 'Nome do produto muito longo'
+  if (isNaN(price) || price <= 0) return 'Preço inválido'
+  if (!PRODUCT_UNITS.includes(unit as (typeof PRODUCT_UNITS)[number]))
+    return 'Unidade inválida'
+  return null
 }

@@ -29,11 +29,10 @@ export function createCartItem(overrides: Partial<CartItem> = {}): CartItem {
 export function createSale(overrides: Partial<Sale> = {}): Sale {
   return {
     id: crypto.randomUUID(),
-    paymentMethod: overrides.paymentMethod ?? 'cash',
-    items: [],
     total: 0,
-    createdAt: new Date().toISOString(),
-    soldAt: new Date().toISOString().split('T')[0],
+    payment_method: 'cash',
+    sold_at: new Date().toISOString().split('T')[0],
+    created_at: new Date().toISOString(),
     ...overrides,
   }
 }

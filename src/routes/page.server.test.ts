@@ -124,7 +124,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Dados do produto inválidos')
+        expect(result.error).toBe('Nome do produto inválido')
       }
     })
 
@@ -141,7 +141,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Dados do produto inválidos')
+        expect(result.error).toBe('Preço inválido')
       }
     })
 
@@ -203,7 +203,7 @@ describe('actions', () => {
 
       expect(isErrorResult(result)).toBe(true)
       if (isErrorResult(result)) {
-        expect(result.error).toBe('Dados do produto inválidos')
+        expect(result.error).toBe('ID do produto inválido')
       }
     })
   })
