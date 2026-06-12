@@ -10,9 +10,9 @@ import { z } from 'zod'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const signupSchema = z.object({
-  email: z.email('Invalid email address'),
+  email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  storeId: z.uuid('Invalid store ID'),
+  storeId: z.string().uuid('Invalid store ID'),
 })
 
 // Admin client with service role for user creation

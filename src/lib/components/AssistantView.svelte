@@ -7,8 +7,13 @@
 
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- plain Map intentional: avoids Svelte reactivity overhead on every cache write during streaming
   const renderCache = new Map<string, string>()
+  const MAX_CACHE_SIZE = 100
   function renderMarkdown(content: string): string {
     if (renderCache.has(content)) return renderCache.get(content)!
+    if (renderCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = renderCache.keys().next().value
+      if (firstKey !== undefined) renderCache.delete(firstKey)
+    }
     const html = DOMPurify.sanitize(marked.parse(content) as string)
     renderCache.set(content, html)
     return html
